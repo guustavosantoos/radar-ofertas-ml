@@ -24,12 +24,10 @@ app.get('/api/v1/health', (_req, res) => {
   });
 });
 
-// Endpoint público para busca de ofertas sem login (usado pelo dashboard inicial)
-app.use('/api/v1/marketplace/mercadolivre/deals', marketplaceRouter);
-app.use('/api/v1/marketplace/mercadolivre/best-sellers', marketplaceRouter);
+// Marketplace (auth seletiva aplicada dentro do próprio router)
+app.use('/api/v1/marketplace', marketplaceRouter);
 
-// ─── Rotas Protegidas (requerem JWT do Supabase) ──────────────────────────────
-app.use('/api/v1/marketplace', requireAuth, marketplaceRouter);
+// WhatsApp: tudo protegido por JWT
 app.use('/api/v1/whatsapp', requireAuth, whatsappRouter);
 
 // ─── Servidor Local ───────────────────────────────────────────────────────────

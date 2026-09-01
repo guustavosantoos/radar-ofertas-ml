@@ -3,6 +3,7 @@ import { MercadoLivreService, MercadoLivreAffiliateService } from '@radar-oferta
 import { rankDeals } from '@radar-ofertas/deal-engine';
 import { MessageComposer, FLASH_IMPERDIVEL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE, ACHADINHOS_MELI_TEMPLATE } from '@radar-ofertas/messaging';
 import { getProfile } from '../lib/supabase-admin.js';
+import { requireAuth } from '../middleware/auth.js';
 import dotenv from 'dotenv';
 import path from 'node:path';
 
@@ -55,9 +56,9 @@ router.get('/mercadolivre/categories', async (req, res) => {
 /**
  * GET /api/v1/marketplace/mercadolivre/search?q=notebook
  * Busca categorias do ML que correspondem ao termo e retorna as ofertas.
- * Tenta múltiplas categorias em sequência até encontrar uma com ofertas ativas.
+ * Requer autenticação.
  */
-router.get('/mercadolivre/search', async (req, res) => {
+router.get('/mercadolivre/search', requireAuth, async (req, res) => {
   try {
     const q = (req.query.q as string || '').trim();
     const templateType = (req.query.template as string) || 'achadinhos';
@@ -213,8 +214,9 @@ router.get('/mercadolivre/search', async (req, res) => {
 
 /**
  * GET /api/v1/marketplace/mercadolivre/highlights?category=MLB1051
+ * Requer autenticação.
  */
-router.get('/mercadolivre/highlights', async (req, res) => {
+router.get('/mercadolivre/highlights', requireAuth, async (req, res) => {
   try {
     const categoryId = (req.query.category as string) || 'MLB1051';
     const limit = parseInt((req.query.limit as string) || '5', 10);
@@ -236,8 +238,9 @@ router.get('/mercadolivre/highlights', async (req, res) => {
 
 /**
  * GET /api/v1/marketplace/mercadolivre/trends?category=MLB1051
+ * Requer autenticação.
  */
-router.get('/mercadolivre/trends', async (req, res) => {
+router.get('/mercadolivre/trends', requireAuth, async (req, res) => {
   try {
     const categoryId = (req.query.category as string) || 'MLB1051';
     const trends = await mlService.getCategoryTrends(categoryId);
@@ -281,8 +284,9 @@ router.get('/mercadolivre/deals', async (req, res) => {
 /**
  * GET /api/v1/marketplace/mercadolivre/discounted-deals
  * Busca apenas produtos COM DESCONTO REAL e injeta o LINK DE AFILIADO monetizado!
+ * Requer autenticação.
  */
-router.get('/mercadolivre/discounted-deals', async (req, res) => {
+router.get('/mercadolivre/discounted-deals', requireAuth, async (req, res) => {
   try {
     const categoryId = req.query.category as string | undefined;
     const minDiscount = parseInt((req.query.minDiscount as string) || '5', 10);
@@ -321,8 +325,9 @@ router.get('/mercadolivre/discounted-deals', async (req, res) => {
 /**
  * GET /api/v1/marketplace/mercadolivre/scored-deals
  * Avalia, pontua (0 a 100) e classifica todas as ofertas por Nível (IMPERDÍVEL, ÓTIMA, BOA, NORMAL)
+ * Requer autenticação.
  */
-router.get('/mercadolivre/scored-deals', async (req, res) => {
+router.get('/mercadolivre/scored-deals', requireAuth, async (req, res) => {
   try {
     const categoryId = req.query.category as string | undefined;
     const minScore = parseInt((req.query.minScore as string) || '0', 10);
@@ -384,8 +389,9 @@ router.get('/mercadolivre/scored-deals', async (req, res) => {
 /**
  * GET /api/v1/marketplace/mercadolivre/promotional-messages
  * Gera ofertas com mensagens formatadas prontas para copiar e enviar no WhatsApp!
+ * Requer autenticação.
  */
-router.get('/mercadolivre/promotional-messages', async (req, res) => {
+router.get('/mercadolivre/promotional-messages', requireAuth, async (req, res) => {
   try {
     const categoryId = req.query.category as string | undefined;
     const searchQuery = (req.query.q || req.query.search) as string | undefined;
@@ -464,9 +470,10 @@ router.get('/mercadolivre/promotional-messages', async (req, res) => {
 
 /**
  * GET /api/v1/marketplace/mercadolivre/best-sellers
- * Retorna os produtos MAIS VENDIDOS do Mercado Livre (https://www.mercadolivre.com.br/mais-vendidos)
+ * Retorna os produtos MAIS VENDIDOS do Mercado Livre.
+ * Requer autenticação.
  */
-router.get('/mercadolivre/best-sellers', async (req, res) => {
+router.get('/mercadolivre/best-sellers', requireAuth, async (req, res) => {
   try {
     const templateType = (req.query.template as string) || 'achadinhos';
     const affiliateTag = await resolveAffiliateTag(req);
