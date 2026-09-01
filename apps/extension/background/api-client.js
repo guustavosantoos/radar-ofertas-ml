@@ -6,8 +6,15 @@ const DEFAULT_ENV = 'prod';
 
 async function getApiConfig() {
   const data = await chrome.storage.local.get(['apiBaseUrl', 'apiEnvironment', 'authToken', 'userId', 'affiliateTag']);
-  const env = data.apiEnvironment || DEFAULT_ENV;
-  const baseUrl = data.apiBaseUrl || ENVIRONMENTS[env] || ENVIRONMENTS[DEFAULT_ENV];
+  let env = data.apiEnvironment || DEFAULT_ENV;
+  let baseUrl = data.apiBaseUrl || ENVIRONMENTS[env] || ENVIRONMENTS[DEFAULT_ENV];
+
+  // Limpa URLs legadas do cache antigo da extensão
+  if (baseUrl.includes('achadinho') || baseUrl.includes('worf.replit.dev') || baseUrl.includes('replit')) {
+    baseUrl = ENVIRONMENTS['prod'];
+    await chrome.storage.local.set({ apiBaseUrl: baseUrl, apiEnvironment: 'prod' });
+  }
+
   return {
     baseUrl,
     token: data.authToken || null,
@@ -30,7 +37,7 @@ function buildHeaders(token) {
 async function apiRequest(method, path, body = null) {
   const config = await getApiConfig();
   if (!config.token) {
-    throw new Error('Não autenticado. Faça login no Achadinho PRO.');
+    throw new Error('Não autenticado. Faça login no Radar Ofertas ML.');
   }
 
   const url = `${config.baseUrl}${path}`;
