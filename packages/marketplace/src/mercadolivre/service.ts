@@ -1,6 +1,7 @@
 import { CategoryHighlight, CategoryTrend, NormalizedProduct } from '@radar-ofertas/domain';
 import { MercadoLivreClient, MLAuthConfig } from './client.js';
 import { normalizeMLCatalogProduct, normalizeMLScrapedDeal } from './normalizer.js';
+import { ML_CATEGORIES_TREE } from './categories-data.js';
 
 export class MercadoLivreService {
   private client: MercadoLivreClient;
@@ -9,55 +10,18 @@ export class MercadoLivreService {
     this.client = new MercadoLivreClient(config);
   }
 
-  // Cache em memória para não refazer as 32 requisições a cada chamada
+  // Cache em memória
   private _categoryCache: Array<{ id: string; name: string; parentId: string | null }> | null = null;
   // Cache de ofertas e mais vendidos em memória (TTL: 5 minutos)
   private _dealsCache: Map<string, { timestamp: number; data: NormalizedProduct[] }> = new Map();
   private _CACHE_TTL_MS = 5 * 60 * 1000;
 
   /**
-   * Obtém todas as categorias do ML Brasil — principais e subcategorias (≈479 categorias).
-   * Resultado cacheado em memória durante o processo.
+   * Obtém todas as categorias do ML Brasil — principais e subcategorias.
+   * Carregamento instantâneo via taxonomia oficial predefinida.
    */
   async getAllCategories(): Promise<Array<{ id: string; name: string; parentId: string | null }>> {
-    if (this._categoryCache) return this._categoryCache;
-
-    try {
-      const topCats = await this.client.get<Array<{ id: string; name: string }>>('/sites/MLB/categories');
-      if (!topCats || !topCats.length) return [];
-
-      // Busca detalhes de todas as categorias principais em paralelo
-      const details = await Promise.all(
-        topCats.map(cat =>
-          this.client
-            .get<{ id: string; name: string; children_categories?: Array<{ id: string; name: string }> }>(`/categories/${cat.id}`)
-            .catch(() => null)
-        )
-      );
-
-      const all: Array<{ id: string; name: string; parentId: string | null }> = [];
-      for (const d of details) {
-        if (!d?.id) continue;
-        all.push({ id: d.id, name: d.name, parentId: null });
-        for (const child of d.children_categories || []) {
-          all.push({ id: child.id, name: child.name, parentId: d.id });
-        }
-      }
-
-      // Deduplica por id
-      const seen = new Set<string>();
-      this._categoryCache = all.filter(c => {
-        if (seen.has(c.id)) return false;
-        seen.add(c.id);
-        return true;
-      });
-
-      console.log(`[MercadoLivreService] Categorias carregadas: ${this._categoryCache.length}`);
-      return this._categoryCache;
-    } catch (error) {
-      console.error('[MercadoLivreService] Erro ao buscar todas as categorias:', error);
-      return [];
-    }
+    return ML_CATEGORIES_TREE;
   }
 
   /**
