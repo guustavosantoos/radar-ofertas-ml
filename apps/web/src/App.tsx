@@ -198,15 +198,50 @@ function SettingsPage() {
   const [showSecret, setShowSecret] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  // Carrega a tag de afiliado salva no perfil do Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const user = data?.session?.user;
+      if (user) {
+        supabase
+          .from('profiles')
+          .select('affiliate_tag')
+          .eq('id', user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile?.affiliate_tag) {
+              setCfg((prev: typeof cfg) => ({ ...prev, affiliateTag: profile.affiliate_tag }));
+              setIsConnected(true);
+            }
+          });
+      }
+    });
+  }, []);
+
+  const handleSave = async () => {
     localStorage.setItem('radar_ml_cfg', JSON.stringify(cfg));
+    
+    // Sincroniza com a tabela profiles no Supabase
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ affiliate_tag: cfg.affiliateTag.trim() })
+          .eq('id', user.id);
+      }
+    } catch (err) {
+      console.warn('Erro ao atualizar tag de afiliado no Supabase:', err);
+    }
+
     setIsConnected(true);
     setShowEditForm(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     setIsConnected(false);
     setShowEditForm(true);
   };
