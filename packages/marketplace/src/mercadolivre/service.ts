@@ -113,54 +113,75 @@ export class MercadoLivreService {
     const key = cacheKey || categoryId || 'DEAL_OF_THE_DAY';
 
     try {
-      const url = categoryId 
-        ? `https://www.mercadolivre.com.br/ofertas?category=${categoryId}`
-        : `https://www.mercadolivre.com.br/ofertas?promotion_type=deal_of_the_day`;
+      const pageNumbers = [1, 2, 3];
+      const urls: string[] = [];
 
-      console.log(`[MercadoLivreService] Coletando ofertas via HTTP de: ${url}`);
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
-        }
-      });
+      if (categoryId) {
+        pageNumbers.forEach(p => urls.push(`https://www.mercadolivre.com.br/ofertas?category=${categoryId}&page=${p}`));
+      } else {
+        pageNumbers.forEach(p => urls.push(`https://www.mercadolivre.com.br/ofertas?page=${p}`));
+        urls.push(`https://www.mercadolivre.com.br/ofertas?promotion_type=lightning`);
+      }
 
-      const html = await res.text();
+      console.log(`[MercadoLivreService] Coletando ofertas multi-páginas via HTTP (${urls.length} requisições em paralelo)...`);
       const { load } = await import('cheerio');
-      const $ = load(html);
+
+      const pageResponses = await Promise.all(
+        urls.map(url =>
+          fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            },
+          })
+            .then(res => res.text())
+            .catch(() => '')
+        )
+      );
+
       const rawCards: any[] = [];
+      const seenTitles = new Set<string>();
 
-      $('div.poly-card, .promotion-item__container, li.promotion-item, div.ui-search-result').each((_, el) => {
-        const card = $(el);
-        const title = card.find('.poly-component__title, .promotion-item__title, h2, a[class*="title"]').first().text().trim();
-        const currentPrice = card.find('.poly-price__current .andes-money-amount__fraction, .promotion-item__price .andes-money-amount__fraction').first().text().trim();
-        const oldPrice = card.find('s.andes-money-amount--previous .andes-money-amount__fraction, .promotion-item__old-price .andes-money-amount__fraction').first().text().trim();
-        const discount = card.find('.poly-price__discount-polylabel, .andes-money-amount__discount, .promotion-item__discount').first().text().trim() || null;
-        const installments = card.find('.poly-price__installments, .promotion-item__installments').first().text().trim() || null;
-        const shipping = card.find('.poly-component__shipping-v2, .poly-component__shipping, .promotion-item__shipping').first().text().trim() || null;
-        const rating = card.find('.poly-component__review-compacted, .poly-reviews__rating').first().text().trim() || '4.8';
-        const link = card.find('a[href*="mercadolivre.com.br"]').first().attr('href') || null;
-        const image = card.find('img').first().attr('src') || card.find('img').first().attr('data-src') || null;
+      for (const html of pageResponses) {
+        if (!html) continue;
+        const $ = load(html);
 
-        if (title && currentPrice) {
-          rawCards.push({
-            title,
-            price: currentPrice,
-            oldPrice: oldPrice || null,
-            discount,
-            installments,
-            shipping,
-            rating,
-            link,
-            image,
-          });
-        }
-      });
+        $('div.poly-card, .promotion-item__container, li.promotion-item, div.ui-search-result').each((_, el) => {
+          const card = $(el);
+          const title = card.find('.poly-component__title, .promotion-item__title, h2, a[class*="title"]').first().text().trim();
+          const currentPrice = card.find('.poly-price__current .andes-money-amount__fraction, .promotion-item__price .andes-money-amount__fraction').first().text().trim();
+          const oldPrice = card.find('s.andes-money-amount--previous .andes-money-amount__fraction, .promotion-item__old-price .andes-money-amount__fraction').first().text().trim();
+          const discount = card.find('.poly-price__discount-polylabel, .andes-money-amount__discount, .promotion-item__discount').first().text().trim() || null;
+          const installments = card.find('.poly-price__installments, .promotion-item__installments').first().text().trim() || null;
+          const shipping = card.find('.poly-component__shipping-v2, .poly-component__shipping, .promotion-item__shipping').first().text().trim() || null;
+          const rating = card.find('.poly-component__review-compacted, .poly-reviews__rating').first().text().trim() || '4.8';
+          const link = card.find('a[href*="mercadolivre.com.br"]').first().attr('href') || null;
+          const image = card.find('img').first().attr('src') || card.find('img').first().attr('data-src') || null;
+
+          if (title && currentPrice) {
+            const normalizedTitle = title.toLowerCase().slice(0, 45);
+            if (!seenTitles.has(normalizedTitle)) {
+              seenTitles.add(normalizedTitle);
+              rawCards.push({
+                title,
+                price: currentPrice,
+                oldPrice: oldPrice || null,
+                discount,
+                installments,
+                shipping,
+                rating,
+                link,
+                image,
+              });
+            }
+          }
+        });
+      }
 
       const normalized = rawCards.map(normalizeMLScrapedDeal);
       this._dealsCache.set(key, { timestamp: Date.now(), data: normalized });
-      console.log(`[MercadoLivreService] Ofertas coletadas com sucesso (${key}): ${normalized.length} itens`);
+      console.log(`[MercadoLivreService] Ofertas coletadas com sucesso (${key}): ${normalized.length} itens únicos`);
       return normalized;
     } catch (error) {
       console.error('[MercadoLivreService] Erro durante a varredura de ofertas:', error);
@@ -193,49 +214,55 @@ export class MercadoLivreService {
     const cacheKey = 'BEST_SELLERS';
 
     try {
-      const url = 'https://www.mercadolivre.com.br/mais-vendidos#origin=stripe';
+      const url = 'https://www.mercadolivre.com.br/mais-vendidos';
       console.log(`[MercadoLivreService] Coletando mais vendidos via HTTP de: ${url}`);
 
+      const { load } = await import('cheerio');
       const res = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
-        }
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
       });
 
       const html = await res.text();
-      const { load } = await import('cheerio');
       const $ = load(html);
       const rawCards: any[] = [];
+      const seenTitles = new Set<string>();
 
-      $('.dynamic-carousel__item-container, div.poly-card, div.ui-search-result').each((_, el) => {
+      $('.dynamic-carousel__item-container, div.poly-card, div.ui-search-result, .promotion-item__container').each((_, el) => {
         const card = $(el);
-        const title = card.find('.dynamic-carousel__title, .poly-component__title, h2').first().text().trim() || card.find('img').first().attr('alt') || '';
-        const currentPrice = card.find('.dynamic-carousel__price .andes-money-amount__fraction, .poly-price__current .andes-money-amount__fraction').first().text().trim();
+        const title = card.find('.dynamic-carousel__title, .poly-component__title, h2, h3, a[class*="title"]').first().text().trim() || card.find('img').first().attr('alt') || '';
+        const rawPrice = card.find('.dynamic-carousel__price, .poly-price__current, .andes-money-amount__fraction').first().text().trim();
+        const currentPrice = rawPrice.replace(/[^\d]/g, '');
         const oldPrice = card.find('.dynamic-carousel__oldprice .andes-money-amount__fraction, s.andes-money-amount--previous .andes-money-amount__fraction').first().text().trim();
         const discount = card.find('.dynamic-carousel__discount, .poly-price__discount-polylabel').first().text().trim() || null;
         const link = card.find('a[href*="mercadolivre.com.br"]').first().attr('href') || null;
         const image = card.find('img').first().attr('src') || card.find('img').first().attr('data-src') || null;
 
         if (title && currentPrice) {
-          rawCards.push({
-            title,
-            price: currentPrice,
-            oldPrice: oldPrice || null,
-            discount,
-            installments: null,
-            shipping: 'Frete grátis',
-            rating: '4.9',
-            link,
-            image,
-          });
+          const normalizedTitle = title.toLowerCase().slice(0, 45);
+          if (!seenTitles.has(normalizedTitle)) {
+            seenTitles.add(normalizedTitle);
+            rawCards.push({
+              title,
+              price: currentPrice,
+              oldPrice: oldPrice ? oldPrice.replace(/[^\d]/g, '') : null,
+              discount,
+              installments: null,
+              shipping: 'Frete grátis',
+              rating: '4.9',
+              link,
+              image,
+            });
+          }
         }
       });
 
       const normalized = rawCards.map(normalizeMLScrapedDeal);
       this._dealsCache.set(cacheKey, { timestamp: Date.now(), data: normalized });
-      console.log(`[MercadoLivreService] Mais vendidos coletados com sucesso: ${normalized.length} itens`);
+      console.log(`[MercadoLivreService] Mais vendidos coletados com sucesso: ${normalized.length} itens únicos`);
       return normalized;
     } catch (error) {
       console.error('[MercadoLivreService] Erro durante a varredura de mais vendidos:', error);

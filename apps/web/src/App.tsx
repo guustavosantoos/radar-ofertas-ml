@@ -406,7 +406,7 @@ function SettingsPage() {
 }
 
 // ─── Dashboard ───────────────────────────────────────────
-function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate: string; setSelectedTemplate: (t: string) => void }) {
+function Dashboard({ selectedTemplate, setSelectedTemplate, userName }: { selectedTemplate: string; setSelectedTemplate: (t: string) => void; userName?: string }) {
   const [activeTab, setActiveTab] = useState('all');
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(getSavedCustomTemplates);
   const [searchTerm, setSearchTerm] = useState('');
@@ -426,6 +426,10 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [countdown, setCountdown] = useState(120); // 2 minutos
   const [lastUpdateText, setLastUpdateText] = useState<string>('');
+
+  const currentHour = new Date().getHours();
+  const greetingTime = currentHour < 12 ? 'Bom dia' : currentHour < 18 ? 'Boa tarde' : 'Boa noite';
+  const firstName = userName ? userName.split(' ')[0] : 'Usuário';
 
   const normalizeStr = (str: string) =>
     str ? str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
@@ -644,10 +648,10 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
 
   return (
     <>
-      {/* Saudação */}
+      {/* Saudação Dinâmica */}
       <div className="header-greeting" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="greeting-title">Boa tarde, Gustavo 👋</h1>
+          <h1 className="greeting-title">{greetingTime}, {firstName} 👋</h1>
           <p className="greeting-sub">Acompanhe as melhores ofertas do Mercado Livre em tempo real.</p>
         </div>
         {lastUpdateText && (
@@ -692,12 +696,57 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
         </div>
       </div>
 
+      {/* ─── Atalhos de Categorias Mobile / Quick Pills ─── */}
+      <div className="quick-category-scroll-wrap">
+        <div className="quick-category-pills">
+          {[
+            { id: null, tab: 'all', label: '🔥 Todas as Ofertas', isSpecial: true },
+            { id: null, tab: 'best-sellers', label: '🏆 Mais Vendidos', isSpecial: true },
+            { id: 'MLB1051', tab: 'all', label: '📱 Celulares' },
+            { id: 'MLB1648', tab: 'all', label: '💻 Informática' },
+            { id: 'MLB1000', tab: 'all', label: '📺 TVs & Áudio' },
+            { id: 'MLB1144', tab: 'all', label: '🎮 Games' },
+            { id: 'MLB5726', tab: 'all', label: '⚡ Eletros' },
+            { id: 'MLB1574', tab: 'all', label: '🏠 Casa' },
+            { id: 'MLB1430', tab: 'all', label: '👗 Moda' },
+            { id: 'MLB1246', tab: 'all', label: '💄 Beleza' },
+            { id: 'MLB1500', tab: 'all', label: '🔧 Ferramentas' },
+            { id: 'MLB1384', tab: 'all', label: '🍼 Bebês' },
+          ].map((cat) => {
+            const isSelected = cat.isSpecial
+              ? activeTab === cat.tab && !selectedCategoryId
+              : selectedCategoryId === cat.id;
+
+            return (
+              <button
+                key={cat.label}
+                type="button"
+                className={`quick-pill-btn ${isSelected ? 'active' : ''}`}
+                onClick={() => {
+                  if (cat.isSpecial) {
+                    setSelectedCategoryId(null);
+                    setActiveTab(cat.tab);
+                    fetchDeals({ tab: cat.tab, template: selectedTemplate, categoryId: null });
+                  } else {
+                    setActiveTab('all');
+                    setSelectedCategoryId(cat.id);
+                    fetchDeals({ tab: 'all', template: selectedTemplate, categoryId: cat.id });
+                  }
+                }}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ─── Painel de Categorias Mercado Livre (Estilo Achadinho Pro) ─── */}
       <div className="category-selector-card">
         <div className="category-selector-header">
           <div className="category-selector-title">
             <Filter size={18} color="#ff5500" />
-            <span>Categorias para Busca Mercado Livre ({selectedCategoryId ? '1 selecionada' : '0 selecionadas'})</span>
+            <span>Categorias Detalhadas ({selectedCategoryId ? '1 selecionada' : '0 selecionadas'})</span>
           </div>
 
           <button 
@@ -1464,6 +1513,30 @@ export function App() {
 
   return (
     <div className="app-container">
+      {/* ─── Header Mobile Exclusivo (visível em telas < 768px) ─── */}
+      <header className="mobile-header-bar">
+        <div className="mobile-header-left">
+          <div className="logo-icon-box mobile-logo-icon">
+            <Zap size={18} fill="white" />
+          </div>
+          <div className="mobile-logo-text">
+            <span className="mobile-logo-title">Radar <span className="mobile-logo-accent">ML</span></span>
+          </div>
+        </div>
+
+        <div className="mobile-header-right">
+          <div className="mobile-status-pill">
+            <span className="dot-online" />
+            <span>AO VIVO</span>
+          </div>
+          <div className="mobile-avatar" title={displayName}>{avatarInitials}</div>
+          <button className="mobile-logout-btn" onClick={handleLogout} title="Sair">
+            <LogOut size={16} />
+          </button>
+        </div>
+      </header>
+
+      {/* ─── Sidebar Desktop ─── */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-icon-box">
@@ -1543,6 +1616,7 @@ export function App() {
           <Dashboard
             selectedTemplate={selectedTemplate}
             setSelectedTemplate={setSelectedTemplate}
+            userName={displayName}
           />
         )}
         {page === 'whatsapp' && <WhatsAppPage />}
@@ -1551,6 +1625,41 @@ export function App() {
         )}
         {page === 'settings' && <SettingsPage />}
       </main>
+
+      {/* ─── Barra de Navegação Inferior Mobile (Estilo Dock Flutuante) ─── */}
+      <nav className="mobile-bottom-dock">
+        <button
+          className={`dock-tab-btn ${page === 'dashboard' ? 'active' : ''}`}
+          onClick={() => { setPage('dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
+          <LayoutDashboard size={20} />
+          <span>Ofertas</span>
+        </button>
+
+        <button
+          className={`dock-tab-btn ${page === 'whatsapp' ? 'active' : ''}`}
+          onClick={() => { setPage('whatsapp'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
+          <Share2 size={20} />
+          <span>WhatsApp</span>
+        </button>
+
+        <button
+          className={`dock-tab-btn ${page === 'custom-message' ? 'active' : ''}`}
+          onClick={() => { setPage('custom-message'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
+          <MessageSquare size={20} />
+          <span>Templates</span>
+        </button>
+
+        <button
+          className={`dock-tab-btn ${page === 'settings' ? 'active' : ''}`}
+          onClick={() => { setPage('settings'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
+          <Settings size={20} />
+          <span>Config</span>
+        </button>
+      </nav>
     </div>
   );
 }
