@@ -12,10 +12,10 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const router = Router();
 
 export const mlService = new MercadoLivreService({
-  clientId: process.env.ML_CLIENT_ID || '7399354593906979',
-  clientSecret: process.env.ML_CLIENT_SECRET || 'RqpbegQLdHSjjcHNK8adTBvoOiMGG8b8',
-  refreshToken: process.env.ML_REFRESH_TOKEN || 'TG-6a95d334e1ff5c0001d89d04-217310097',
-  redirectUri: process.env.ML_REDIRECT_URI || 'https://oauth.pstmn.io/v1/callback',
+  clientId: process.env.ML_CLIENT_ID || '',
+  clientSecret: process.env.ML_CLIENT_SECRET || '',
+  refreshToken: process.env.ML_REFRESH_TOKEN || '',
+  redirectUri: process.env.ML_REDIRECT_URI || '',
 });
 
 /**
@@ -47,7 +47,7 @@ router.get('/mercadolivre/search', async (req, res) => {
   try {
     const q = (req.query.q as string || '').trim();
     const templateType = (req.query.template as string) || 'achadinhos';
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || 'gustavobraulio';
+    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
 
     if (!q) {
       return res.status(400).json({ success: false, error: 'Parâmetro q é obrigatório' });
@@ -272,7 +272,7 @@ router.get('/mercadolivre/discounted-deals', async (req, res) => {
   try {
     const categoryId = req.query.category as string | undefined;
     const minDiscount = parseInt((req.query.minDiscount as string) || '5', 10);
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || 'ofertasAGORA';
+    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
@@ -313,7 +313,7 @@ router.get('/mercadolivre/scored-deals', async (req, res) => {
     const categoryId = req.query.category as string | undefined;
     const minScore = parseInt((req.query.minScore as string) || '0', 10);
     const targetTier = (req.query.tier as string)?.toUpperCase();
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || 'ofertasAGORA';
+    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
@@ -379,7 +379,7 @@ router.get('/mercadolivre/promotional-messages', async (req, res) => {
     // Se o usuário está fazendo uma busca específica por palavra-chave, usa minScore=0 para trazer todas as correspondências
     const minScore = parseInt(minScoreParam || (searchQuery ? '0' : '30'), 10);
     const templateType = (req.query.template as string) || 'default';
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || 'gustavobraulio';
+    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
@@ -454,7 +454,7 @@ router.get('/mercadolivre/promotional-messages', async (req, res) => {
 router.get('/mercadolivre/best-sellers', async (req, res) => {
   try {
     const templateType = (req.query.template as string) || 'achadinhos';
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || 'gustavobraulio';
+    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 

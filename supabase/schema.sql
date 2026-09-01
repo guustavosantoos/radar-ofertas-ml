@@ -8,7 +8,7 @@ create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   email text,
   full_name text,
-  affiliate_tag text default 'gustavobraulio',
+  affiliate_tag text default '',
   created_at timestamptz default timezone('utc'::text, now()) not null,
   updated_at timestamptz default timezone('utc'::text, now()) not null
 );
@@ -40,7 +40,7 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    'gustavobraulio'
+    ''
   );
   return new;
 end;
@@ -138,7 +138,7 @@ create table if not exists public.user_settings (
   user_id uuid references auth.users on delete cascade primary key,
   min_discount_percentage integer default 20,
   auto_post boolean default false,
-  affiliate_tag text default 'gustavobraulio',
+  affiliate_tag text default '',
   selected_template_id text default 'achadinhos',
   active_categories jsonb default '["MLB1051", "MLB1648", "MLB1000", "MLB1430"]'::jsonb,
   updated_at timestamptz default timezone('utc'::text, now()) not null

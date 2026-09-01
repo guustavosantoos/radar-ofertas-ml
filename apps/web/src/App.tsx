@@ -185,10 +185,10 @@ function SettingsPage() {
       try { return JSON.parse(saved); } catch (e) {}
     }
     return {
-      clientId: '7399354593906979',
-      clientSecret: 'RqpbegQLdHSjjcHNK8adTBvoOiMGG8b8',
-      refreshToken: 'TG-6a95d334e1ff5c0001d89d04-217310097',
-      affiliateTag: 'gustavobraulio',
+      clientId: '',
+      clientSecret: '',
+      refreshToken: '',
+      affiliateTag: '',
     };
   });
 
@@ -263,11 +263,11 @@ function SettingsPage() {
           <div className="connected-details-grid">
             <div className="connected-detail-box">
               <span className="detail-label">App ID (Client ID)</span>
-              <span className="detail-value">{cfg.clientId || '7399354593906979'}</span>
+              <span className="detail-value">{cfg.clientId || 'Configurado'}</span>
             </div>
             <div className="connected-detail-box">
               <span className="detail-label">Etiqueta de Afiliado</span>
-              <span className="detail-value">{cfg.affiliateTag || 'gustavobraulio'}</span>
+              <span className="detail-value">{cfg.affiliateTag || 'Ativo'}</span>
             </div>
             <div className="connected-detail-box">
               <span className="detail-label">Status da Conexão</span>
@@ -291,8 +291,8 @@ function SettingsPage() {
             Credenciais da API
           </div>
 
-          {field('App ID (Client ID)', 'clientId', 'Ex: 7399354593906979')}
-          {field('Client Secret', 'clientSecret', 'Ex: RqpbegQLdHSjjcHNK8adTBvoOiMGG8b8', 'password', true, showSecret, () => setShowSecret(s => !s))}
+          {field('App ID (Client ID)', 'clientId', 'Ex: 108736459201928')}
+          {field('Client Secret', 'clientSecret', 'Ex: Insira o Client Secret', 'password', true, showSecret, () => setShowSecret(s => !s))}
           {field('Refresh Token', 'refreshToken', 'Ex: TG-xxxxxxxxxxxxxxxx', 'password', true, showToken, () => setShowToken(s => !s))}
 
           <div className="settings-divider" />
@@ -302,7 +302,7 @@ function SettingsPage() {
             Tag de Afiliado
           </div>
 
-          {field('Etiqueta de Afiliado', 'affiliateTag', 'Ex: gustavobraulio')}
+          {field('Etiqueta de Afiliado', 'affiliateTag', 'Ex: sua_tag_afiliado')}
 
           <div className="settings-hint">
             💡 Sua tag é o nome exibido em "Etiqueta em uso" no painel de Afiliados do Mercado Livre.
@@ -648,7 +648,14 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
         </div>
         <div className="metric-card">
           <span className="metric-label">Tag de Afiliado</span>
-          <span className="metric-val" style={{ fontSize: '1rem' }}>gustavobraulio</span>
+          <span className="metric-val" style={{ fontSize: '1rem' }}>
+            {(() => {
+              try {
+                const s = localStorage.getItem('radar_ml_cfg');
+                return s ? JSON.parse(s)?.affiliateTag || 'Ativo' : 'Ativo';
+              } catch { return 'Ativo'; }
+            })()}
+          </span>
         </div>
       </div>
 
@@ -1226,7 +1233,7 @@ function CustomMessagePage({ onSelectTemplate }: { onSelectTemplate?: (id: strin
     .replace(/\{desconto\}/g, '43%')
     .replace(/\{parcelamento\}/g, '10x de R$ 219,90')
     .replace(/\{frete\}/g, 'Frete Grátis 🚚')
-    .replace(/\{link\}/g, 'https://mercadolivre.com.br/sec/example?tracking_id=gustavobraulio')
+    .replace(/\{link\}/g, 'https://mercadolivre.com.br/sec/exemplo')
     .replace(/\{emoji\}/g, '⚡')
     .replace(/\{nivel\}/g, 'IMPERDÍVEL');
 
@@ -1418,8 +1425,8 @@ export function App() {
     return <LoginPage onSuccess={(user) => setCurrentUser(user)} />;
   }
 
-  const displayName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Gustavo';
-  const displayEmail = currentUser.email || 'gustavobraulio';
+  const displayName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuário';
+  const displayEmail = currentUser.email || 'usuario@radarofertas.com';
   const avatarInitials = displayName.substring(0, 2).toUpperCase();
 
   return (

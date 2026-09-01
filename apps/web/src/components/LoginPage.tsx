@@ -193,24 +193,6 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
             </div>
           )}
 
-          {/* Usuário de Teste Rápido */}
-          <div style={{ marginBottom: 18, background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '10px 14px', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ fontSize: '0.8rem', color: '#475569' }}>
-              ⚡ <strong>Usuário de Teste:</strong> <code style={{ color: '#ea580c', fontWeight: 700 }}>admin@radarofertas.com</code>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('admin@radarofertas.com');
-                setPassword('123456');
-                if (isRegister) setFullName('Gustavo Braulio');
-              }}
-              style={{ background: '#ffedd5', color: '#ea580c', border: '1px solid #fed7aa', padding: '5px 12px', borderRadius: 6, fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
-            >
-              Preencher Dados
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="login-form-element">
             {isRegister && (
               <div className="login-input-group">

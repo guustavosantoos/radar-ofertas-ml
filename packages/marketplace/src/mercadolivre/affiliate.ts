@@ -1,5 +1,5 @@
 export interface AffiliateConfig {
-  affiliateTag?: string; // ex: "gustavobraulio"
+  affiliateTag?: string; // ex: "sua_tag"
   mattTool?: string;
 }
 
@@ -8,7 +8,7 @@ export class MercadoLivreAffiliateService {
   private mattTool?: string;
 
   constructor(config?: AffiliateConfig) {
-    this.affiliateTag = config?.affiliateTag || process.env.ML_AFFILIATE_TAG || 'gustavobraulio';
+    this.affiliateTag = config?.affiliateTag || process.env.ML_AFFILIATE_TAG || '';
     this.mattTool = config?.mattTool || process.env.ML_MATT_TOOL;
   }
 
@@ -26,7 +26,9 @@ export class MercadoLivreAffiliateService {
 
     try {
       const urlObj = new URL(cleanBase);
-      urlObj.searchParams.set('tracking_id', tag);
+      if (tag) {
+        urlObj.searchParams.set('tracking_id', tag);
+      }
 
       if (this.mattTool) {
         urlObj.searchParams.set('matt_tool', this.mattTool);
