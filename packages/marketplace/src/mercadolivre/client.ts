@@ -105,7 +105,7 @@ export class MercadoLivreClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      https.get(url, { headers }, (res) => {
+      const req = https.get(url, { headers }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
@@ -119,7 +119,15 @@ export class MercadoLivreClient {
             reject(new Error(`Erro da API ML [HTTP ${res.statusCode} na rota ${endpoint}]: ${data}`));
           }
         });
-      }).on('error', reject);
+      });
+
+      // Timeout de 10s para não travar no ambiente serverless
+      req.setTimeout(10000, () => {
+        req.destroy();
+        reject(new Error(`Timeout na requisição para ${endpoint} (10s)`));
+      });
+
+      req.on('error', reject);
     });
   }
 }
