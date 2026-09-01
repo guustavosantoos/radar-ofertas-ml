@@ -93,3 +93,23 @@ export function getStoredSession() {
   } catch {}
   return null;
 }
+
+/**
+ * Helper de fetch autenticado — injeta automaticamente o JWT do Supabase.
+ * Use no lugar de `fetch` para todas as chamadas à API backend protegida.
+ */
+export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+
+  return fetch(url, { ...options, headers });
+}

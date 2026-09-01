@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import marketplaceRouter, { mlService } from './routes/marketplace.js';
 import whatsappRouter from './routes/whatsapp.js';
+import { requireAuth } from './middleware/auth.js';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
@@ -14,7 +15,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Health Check
+// ─── Rotas Públicas ───────────────────────────────────────────────────────────
 app.get('/api/v1/health', (_req, res) => {
   res.json({
     status: 'ok',
@@ -23,22 +24,25 @@ app.get('/api/v1/health', (_req, res) => {
   });
 });
 
-// Rotas do Marketplace e WhatsApp
-app.use('/api/v1/marketplace', marketplaceRouter);
-app.use('/api/v1/whatsapp', whatsappRouter);
+// Endpoint público para busca de ofertas sem login (usado pelo dashboard inicial)
+app.use('/api/v1/marketplace/mercadolivre/deals', marketplaceRouter);
+app.use('/api/v1/marketplace/mercadolivre/best-sellers', marketplaceRouter);
 
-// Inicia o servidor apenas se for executado diretamente
+// ─── Rotas Protegidas (requerem JWT do Supabase) ──────────────────────────────
+app.use('/api/v1/marketplace', requireAuth, marketplaceRouter);
+app.use('/api/v1/whatsapp', requireAuth, whatsappRouter);
+
+// ─── Servidor Local ───────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`==================================================`);
     console.log(`🚀 RADAR DE OFERTAS API RODANDO NA PORTA ${PORT}`);
     console.log(`📍 Health Check: http://localhost:${PORT}/api/v1/health`);
-    console.log(`📍 Mercado Livre Destaques: http://localhost:${PORT}/api/v1/marketplace/mercadolivre/highlights?category=MLB1051`);
-    console.log(`📍 Mercado Livre Tendências: http://localhost:${PORT}/api/v1/marketplace/mercadolivre/trends?category=MLB1051`);
     console.log(`📍 Mercado Livre Ofertas: http://localhost:${PORT}/api/v1/marketplace/mercadolivre/deals`);
+    console.log(`📍 Mensagens Promocionais (auth): http://localhost:${PORT}/api/v1/marketplace/mercadolivre/promotional-messages`);
     console.log(`==================================================`);
 
-    // Inicia o scanner automático de segundo plano (varredura a cada 5 minutos)
+    // Scanner automático só funciona em servidor dedicado (não Vercel)
     mlService.startAutoScanner(5);
   });
 }

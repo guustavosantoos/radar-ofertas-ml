@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LoginPage } from './components/LoginPage';
-import { getStoredSession, signOutUser, supabase, isSupabaseConfigured } from './supabase';
+import { getStoredSession, signOutUser, supabase, isSupabaseConfigured, apiFetch } from './supabase';
 import {
   LayoutDashboard,
   Settings,
@@ -404,7 +404,7 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
 
   // Carrega a lista de todas as categorias oficiais do Mercado Livre
   useEffect(() => {
-    fetch('/api/v1/marketplace/mercadolivre/categories')
+    apiFetch('/api/v1/marketplace/mercadolivre/categories')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
@@ -441,7 +441,7 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
         url += `&category=${catToUse}`;
       }
 
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       const data = await res.json();
       if (data.success && data.data) {
         // Deduplica por p.id para eliminar a warning de keys duplicadas
@@ -524,7 +524,7 @@ function Dashboard({ selectedTemplate, setSelectedTemplate }: { selectedTemplate
       const isCustom = customTemplates.some(t => t.id === selectedTemplate);
       const apiTemplate = isCustom ? 'achadinhos' : selectedTemplate;
 
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/v1/marketplace/mercadolivre/search?q=${encodeURIComponent(term)}&template=${apiTemplate}`
       );
       const data = await res.json();
@@ -1195,7 +1195,7 @@ function CustomMessagePage({ onSelectTemplate }: { onSelectTemplate?: (id: strin
     localStorage.setItem('radar_custom_templates_list', JSON.stringify(current));
     window.dispatchEvent(new Event('radar_templates_updated'));
 
-    fetch('/api/v1/whatsapp/custom-templates', {
+    apiFetch('/api/v1/whatsapp/custom-templates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: templateName, templateText }),
@@ -1220,7 +1220,7 @@ function CustomMessagePage({ onSelectTemplate }: { onSelectTemplate?: (id: strin
     window.dispatchEvent(new Event('radar_templates_updated'));
     setCustomTemplates(current);
 
-    fetch(`/api/v1/whatsapp/custom-templates/${id}`, { method: 'DELETE' }).catch(e => console.error(e));
+    apiFetch(`/api/v1/whatsapp/custom-templates/${id}`, { method: 'DELETE' }).catch(e => console.error(e));
   };
 
   // Preview com dados de exemplo

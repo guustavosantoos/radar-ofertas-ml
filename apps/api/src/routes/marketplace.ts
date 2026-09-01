@@ -2,12 +2,26 @@ import { Router } from 'express';
 import { MercadoLivreService, MercadoLivreAffiliateService } from '@radar-ofertas/marketplace';
 import { rankDeals } from '@radar-ofertas/deal-engine';
 import { MessageComposer, FLASH_IMPERDIVEL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE, ACHADINHOS_MELI_TEMPLATE } from '@radar-ofertas/messaging';
+import { getProfile } from '../lib/supabase-admin.js';
 import dotenv from 'dotenv';
 import path from 'node:path';
 
 // Carrega o .env da raiz do projeto
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+/**
+ * Resolve o affiliate_tag: prioriza o do perfil do usuário autenticado;
+ * usa query param como fallback (para usuários não autenticados em rotas públicas).
+ */
+async function resolveAffiliateTag(req: any): Promise<string> {
+  const fromQuery = (req.query.affiliateTag as string) || '';
+  if (req.user?.id) {
+    const profile = await getProfile(req.user.id);
+    if (profile?.affiliate_tag) return profile.affiliate_tag;
+  }
+  return fromQuery || process.env.ML_AFFILIATE_TAG || '';
+}
 
 const router = Router();
 
@@ -272,7 +286,7 @@ router.get('/mercadolivre/discounted-deals', async (req, res) => {
   try {
     const categoryId = req.query.category as string | undefined;
     const minDiscount = parseInt((req.query.minDiscount as string) || '5', 10);
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
+    const affiliateTag = await resolveAffiliateTag(req);
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
@@ -313,7 +327,7 @@ router.get('/mercadolivre/scored-deals', async (req, res) => {
     const categoryId = req.query.category as string | undefined;
     const minScore = parseInt((req.query.minScore as string) || '0', 10);
     const targetTier = (req.query.tier as string)?.toUpperCase();
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
+    const affiliateTag = await resolveAffiliateTag(req);
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
@@ -379,7 +393,8 @@ router.get('/mercadolivre/promotional-messages', async (req, res) => {
     // Se o usuário está fazendo uma busca específica por palavra-chave, usa minScore=0 para trazer todas as correspondências
     const minScore = parseInt(minScoreParam || (searchQuery ? '0' : '30'), 10);
     const templateType = (req.query.template as string) || 'default';
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
+    // Usa o affiliate_tag do perfil do usuário autenticado (prioridade) ou do query param
+    const affiliateTag = await resolveAffiliateTag(req);
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
@@ -454,7 +469,7 @@ router.get('/mercadolivre/promotional-messages', async (req, res) => {
 router.get('/mercadolivre/best-sellers', async (req, res) => {
   try {
     const templateType = (req.query.template as string) || 'achadinhos';
-    const affiliateTag = (req.query.affiliateTag as string) || process.env.ML_AFFILIATE_TAG || '';
+    const affiliateTag = await resolveAffiliateTag(req);
 
     const affiliateService = new MercadoLivreAffiliateService({ affiliateTag });
 
