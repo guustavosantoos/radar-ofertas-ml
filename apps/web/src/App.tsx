@@ -1380,14 +1380,14 @@ export function App() {
 
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(({ data: { session } }: any) => {
         if (session?.user) {
           setCurrentUser(session.user);
         }
         setSessionLoading(false);
       }).catch(() => setSessionLoading(false));
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
         setCurrentUser(session?.user || null);
       });
 

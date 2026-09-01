@@ -69,10 +69,15 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
     try {
       if (isRegister) {
         const data = await signUpWithEmail(email.trim(), password, fullName.trim());
-        setSuccessMessage('Conta criada com sucesso! Acessando...');
-        setTimeout(() => {
-          onSuccess(data.user);
-        }, 600);
+        if (data.session) {
+          setSuccessMessage('Conta criada com sucesso! Acessando...');
+          setTimeout(() => {
+            onSuccess(data.user);
+          }, 600);
+        } else {
+          setSuccessMessage('Cadastro realizado com sucesso no Supabase! Você já pode fazer login com seu e-mail e senha.');
+          setIsRegister(false);
+        }
       } else {
         const data = await signInWithEmail(email.trim(), password);
         onSuccess(data.user);
