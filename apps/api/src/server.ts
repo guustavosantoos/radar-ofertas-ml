@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import marketplaceRouter, { mlService } from './routes/marketplace.js';
 import whatsappRouter from './routes/whatsapp.js';
+import extensionRouter from './routes/extension.js';
 import { requireAuth } from './middleware/auth.js';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
@@ -23,6 +24,11 @@ app.get('/api/v1/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Extensão Chrome (Login, Auth Supabase, Sincronização)
+app.use('/api/extension', extensionRouter);
+app.use('/api/v1/extension', extensionRouter);
+app.use('/api/automacao', extensionRouter);
 
 // Marketplace (auth seletiva aplicada dentro do próprio router)
 app.use('/api/v1/marketplace', marketplaceRouter);

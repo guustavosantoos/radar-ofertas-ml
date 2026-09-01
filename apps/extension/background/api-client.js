@@ -120,15 +120,20 @@ export async function autoLogin() {
   return data;
 }
 
+const SUPABASE_URL = 'https://rokkprgddthtyxxxaajt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJva2twcmdkZHRodHl4eHhhYWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNjQxMzUsImV4cCI6MjEwMzg0MDEzNX0.-rqqCmY1OnFqAnhjpu558_M4ejBMGSNSP8G8YVkNOEM';
+
 export async function login(email, password) {
   const config = await getApiConfig();
   const url = `${config.baseUrl}/api/extension/login`;
 
-  console.log('[ExtAPI] Login attempt:', { url, email });
+  console.log('[ExtAPI] Tentativa de login:', { url, email });
 
-  let response;
+  let data = null;
+
+  // 1. Tentar login via backend da API Radar Ofertas ML
   try {
-    response = await fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -136,70 +141,77 @@ export async function login(email, password) {
       },
       body: JSON.stringify({ email, password }),
     });
-  } catch (netErr) {
-    console.error('[ExtAPI] Erro de rede:', netErr);
-    throw new Error(`Erro de rede: ${netErr.message}. Verifique a URL da API: ${url}`);
+
+    if (response.ok) {
+      data = await response.json();
+    } else if (response.status === 401) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || 'E-mail ou senha incorretos.');
+    }
+  } catch (backendErr) {
+    if (backendErr.message?.includes('incorretos')) throw backendErr;
+    console.warn('[ExtAPI] Falha no backend, usando conexão direta com Supabase:', backendErr);
   }
 
-  let responseText = '';
-  try {
-    responseText = await response.clone().text();
-  } catch (e) {
-    console.error('[ExtAPI] Erro ao ler response:', e);
-  }
+  // 2. Fallback direto com Supabase Auth se o backend estiver inicializando
+  if (!data || !data.token) {
+    try {
+      const supaRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
 
-  console.log('[ExtAPI] Response status:', response.status, 'Content-Type:', response.headers.get('content-type'));
-
-  if (!response.ok) {
-    console.error('[ExtAPI] Erro na resposta:', { status: response.status, text: responseText.slice(0, 200) });
-    
-    let errorData;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = {};
+      const supaData = await supaRes.json();
+      if (!supaRes.ok || !supaData.access_token) {
+        throw new Error(supaData.error_description || supaData.msg || 'E-mail ou senha incorretos.');
       }
-    } else {
-      errorData = {};
+
+      // Buscar perfil para extrair nome e Tag de Afiliado
+      let profile = null;
+      try {
+        const profRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${supaData.user?.id}&select=*`, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${supaData.access_token}`,
+          },
+        });
+        if (profRes.ok) {
+          const profs = await profRes.json();
+          if (Array.isArray(profs) && profs.length > 0) profile = profs[0];
+        }
+      } catch {}
+
+      const userName = profile?.full_name || supaData.user?.user_metadata?.full_name || email.split('@')[0];
+      const affiliateTag = profile?.affiliate_tag || '';
+
+      data = {
+        token: supaData.access_token,
+        userId: supaData.user?.id,
+        userName: userName,
+        plan: profile?.plan || 'pro',
+        affiliateTag: affiliateTag,
+      };
+    } catch (supaErr) {
+      console.error('[ExtAPI] Erro Supabase:', supaErr);
+      throw supaErr;
     }
-
-    let message = 'Erro ao fazer login';
-    if (response.status === 401) {
-      message = errorData.message || 'Email ou senha incorretos';
-    } else if (response.status === 403) {
-      message = errorData.message || 'Plano expirado. Renove sua assinatura.';
-    } else if (response.status === 404) {
-      message = `Endpoint não encontrado (404). Verifique a URL: ${url}`;
-    } else if (response.status === 500) {
-      message = 'Erro interno no servidor. Tente novamente em alguns instantes.';
-    } else if (responseText.includes('<!DOCTYPE')) {
-      message = `Resposta inválida do servidor (HTML em vez de JSON). Verifique a URL da API: ${url}`;
-    } else {
-      message = errorData.message || `Erro ${response.status}: ${responseText.slice(0, 100)}`;
-    }
-
-    throw new Error(message);
   }
 
-  let data;
-  try {
-    data = await response.json();
-  } catch (parseErr) {
-    console.error('[ExtAPI] Erro ao fazer parse JSON:', { error: parseErr, text: responseText.slice(0, 200) });
-    throw new Error(`Resposta inválida do servidor. Verifique a URL da API: ${config.baseUrl}`);
+  if (!data || !data.token) {
+    throw new Error('Não foi possível autenticar. Verifique suas credenciais.');
   }
 
-  if (!data.token) {
-    throw new Error('Resposta inválida: token não retornado');
-  }
-
+  // Salvar credenciais e Tag de Afiliado no storage local da extensão
   await chrome.storage.local.set({
     authToken: data.token,
     userId: data.userId,
     userName: data.userName,
-    userPlan: data.plan,
+    userPlan: data.plan || 'pro',
+    affiliateTag: data.affiliateTag || '',
   });
 
   return data;

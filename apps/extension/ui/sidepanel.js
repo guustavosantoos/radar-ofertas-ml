@@ -386,8 +386,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const config = await chrome.storage.local.get(['apiBaseUrl', 'apiEnvironment']);
       const env = config.apiEnvironment || 'prod';
       const ENVIRONMENTS = {
-        prod: 'https://achadinhopro.com.br',
-        dev: 'https://6e7556a0-df58-4384-bca5-2148dbe3e669-00-mo2oldg3hq8g.worf.replit.dev',
+        prod: 'https://radar-ofertas-ml-api.vercel.app',
+        dev: 'http://localhost:3000',
       };
       const baseUrl = config.apiBaseUrl || ENVIRONMENTS[env] || ENVIRONMENTS['prod'];
 

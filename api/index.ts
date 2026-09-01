@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import marketplaceRouter from '../apps/api/src/routes/marketplace.js';
 import whatsappRouter from '../apps/api/src/routes/whatsapp.js';
+import extensionRouter from '../apps/api/src/routes/extension.js';
 import { requireAuth } from '../apps/api/src/middleware/auth.js';
 
 // Carrega variáveis de ambiente
@@ -22,6 +23,11 @@ app.get('/api/v1/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Extensão Chrome (Login, Auth Supabase, Sincronização)
+app.use('/api/extension', extensionRouter);
+app.use('/api/v1/extension', extensionRouter);
+app.use('/api/automacao', extensionRouter);
 
 // Marketplace: rotas públicas (sem autenticação)
 // O requireAuth está aplicado diretamente nos handlers protegidos dentro de marketplaceRouter
