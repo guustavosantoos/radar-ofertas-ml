@@ -5,7 +5,9 @@
   "description": "Plataforma de inteligência, monitoramento e automação de ofertas do Mercado Livre",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build:packages": "npm run build --workspace=packages/domain && npm run build --workspace=packages/deal-engine && npm run build --workspace=packages/marketplace && npm run build --workspace=packages/messaging",
+    "build:apps": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build": "npm run build:packages && npm run build:apps",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev": "npm run dev:api"
