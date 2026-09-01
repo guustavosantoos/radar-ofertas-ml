@@ -187,17 +187,15 @@ function SettingsPage() {
     return {
       clientId: '',
       clientSecret: '',
-      refreshToken: '',
       affiliateTag: '',
     };
   });
 
   const [isConnected, setIsConnected] = useState(() => {
-    return !!(cfg.clientId && cfg.clientSecret);
+    return !!(cfg.clientId || cfg.affiliateTag);
   });
   const [showEditForm, setShowEditForm] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
-  const [showToken, setShowToken] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -220,7 +218,8 @@ function SettingsPage() {
     type: string = 'text',
     toggleShow = false,
     show?: boolean,
-    onToggle?: () => void
+    onToggle?: () => void,
+    hint?: string
   ) => (
     <div className="settings-field">
       <label className="settings-label">{label}</label>
@@ -238,6 +237,7 @@ function SettingsPage() {
           </button>
         )}
       </div>
+      {hint && <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4, display: 'block' }}>{hint}</span>}
     </div>
   );
 
@@ -246,7 +246,7 @@ function SettingsPage() {
       <div className="settings-header">
         <h2 className="settings-title">Configurações do Mercado Livre</h2>
         <p className="settings-sub">
-          Gerencie a conexão da sua conta e credenciais de afiliado Mercado Livre.
+          Conecte sua aplicação do Mercado Livre Developers e sua Tag de Afiliado para rastreamento e monetização automática.
         </p>
       </div>
 
@@ -257,13 +257,13 @@ function SettingsPage() {
               <span className="dot-online-big" />
               <span>API MERCADO LIVRE CONECTADA</span>
             </div>
-            <span className="connected-valid-tag">✓ Token Ativo & Válido</span>
+            <span className="connected-valid-tag">✓ Credenciais Ativas</span>
           </div>
 
           <div className="connected-details-grid">
             <div className="connected-detail-box">
               <span className="detail-label">App ID (Client ID)</span>
-              <span className="detail-value">{cfg.clientId || 'Configurado'}</span>
+              <span className="detail-value">{cfg.clientId || 'Padrão Público'}</span>
             </div>
             <div className="connected-detail-box">
               <span className="detail-label">Etiqueta de Afiliado</span>
@@ -288,25 +288,23 @@ function SettingsPage() {
         <div className="settings-card">
           <div className="settings-section-label">
             <AlertCircle size={16} color="#ff5500" />
-            Credenciais da API
+            Credenciais do Aplicativo (Mercado Livre DevCenter)
           </div>
 
-          {field('App ID (Client ID)', 'clientId', 'Ex: 108736459201928')}
-          {field('Client Secret', 'clientSecret', 'Ex: Insira o Client Secret', 'password', true, showSecret, () => setShowSecret(s => !s))}
-          {field('Refresh Token', 'refreshToken', 'Ex: TG-xxxxxxxxxxxxxxxx', 'password', true, showToken, () => setShowToken(s => !s))}
+          {field('App ID (Client ID)', 'clientId', 'Ex: 108736459201928', 'text', false, false, undefined, 'Pegue no DevCenter do Mercado Livre ao criar sua aplicação.')}
+          {field('Client Secret (Chave Secreta)', 'clientSecret', 'Ex: Insira sua Secret Key', 'password', true, showSecret, () => setShowSecret(s => !s), 'Pegue no DevCenter junto com o App ID.')}
 
           <div className="settings-divider" />
 
           <div className="settings-section-label">
             <Zap size={16} color="#ff5500" />
-            Tag de Afiliado
+            Etiqueta de Afiliado Mercado Livre
           </div>
 
-          {field('Etiqueta de Afiliado', 'affiliateTag', 'Ex: sua_tag_afiliado')}
+          {field('Tag de Afiliado (Etiqueta em Uso)', 'affiliateTag', 'Ex: sua_tag_afiliado', 'text', false, false, undefined, 'O nome da etiqueta configurada no seu painel de Afiliados do Mercado Livre.')}
 
-          <div className="settings-hint">
-            💡 Sua tag é o nome exibido em "Etiqueta em uso" no painel de Afiliados do Mercado Livre.
-            Ela será injetada em todos os links gerados automaticamente.
+          <div className="settings-hint" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534', marginTop: 16 }}>
+            ✅ <strong>Simples & Rápido:</strong> Você <u>não precisa</u> de Refresh Token ou fluxos complexos. Basta o <strong>App ID</strong>, <strong>Client Secret</strong> e sua <strong>Tag de Afiliado</strong> para todas as ofertas serem buscadas e monetizadas automaticamente!
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
@@ -330,8 +328,8 @@ function SettingsPage() {
         <div className="steps-guide-header">
           <HelpCircle size={24} color="#ff5500" style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
-            <h3 className="steps-guide-title">Passo a Passo: Como vincular sua conta Mercado Livre</h3>
-            <p className="steps-guide-sub">Siga os 3 passos simples abaixo para obter seu Client ID e Client Secret:</p>
+            <h3 className="steps-guide-title">Passo a Passo: Onde pegar cada informação</h3>
+            <p className="steps-guide-sub">Siga os 3 passos simples abaixo para obter seu App ID, Client Secret e Tag de Afiliado:</p>
           </div>
         </div>
 
@@ -339,9 +337,9 @@ function SettingsPage() {
           <div className="step-item">
             <div className="step-number">1</div>
             <div className="step-content">
-              <h4 className="step-title">Acesse o Portal Mercado Livre Developers</h4>
+              <h4 className="step-title">Acesse o DevCenter do Mercado Livre</h4>
               <p className="step-desc">
-                Entre em <a href="https://developers.mercadolivre.com.br" target="_blank" rel="noreferrer">developers.mercadolivre.com.br</a> e faça login na sua conta do Mercado Livre.
+                Acesse o link direto <a href="https://developers.mercadolivre.com.br/devcenter" target="_blank" rel="noreferrer" style={{ color: '#ff5500', fontWeight: 700 }}>developers.mercadolivre.com.br/devcenter</a> e faça login com sua conta do Mercado Livre.
               </p>
             </div>
           </div>
@@ -349,10 +347,10 @@ function SettingsPage() {
           <div className="step-item">
             <div className="step-number">2</div>
             <div className="step-content">
-              <h4 className="step-title">Crie uma Aplicação e Copie o Client ID & Client Secret</h4>
+              <h4 className="step-title">Crie uma Aplicação e Copie o App ID & Client Secret</h4>
               <p className="step-desc">
-                Vá em <strong>Meus Aplicativos → Criar nova aplicação</strong>. Preencha o nome da aplicação e em <i>Redirect URI</i> coloque <code>https://oauth.pstmn.io/v1/callback</code>.
-                Após salvar, o painel exibirá o seu <strong>App ID (Client ID)</strong> e o <strong>Client Secret</strong>.
+                Clique em <strong>Criar nova aplicação</strong>. Preencha o nome (ex: <code>Radar de Ofertas</code>) e em <i>URI de redirecionamento</i> coloque <code>https://oauth.pstmn.io/v1/callback</code>.
+                Após salvar, o painel exibirá imediatamente o seu <strong>App ID (Client ID)</strong> e o <strong>Client Secret</strong> (basta clicar no olho/copiar).
               </p>
             </div>
           </div>
@@ -360,9 +358,9 @@ function SettingsPage() {
           <div className="step-item">
             <div className="step-number">3</div>
             <div className="step-content">
-              <h4 className="step-title">Vincule na Ferramenta com sua Tag de Afiliado</h4>
+              <h4 className="step-title">Copie sua Tag no Painel de Afiliados</h4>
               <p className="step-desc">
-                Informe o seu <strong>App ID</strong> e <strong>Client Secret</strong>, adicione a sua <strong>Etiqueta de Afiliado</strong> (disponível no <a href="https://afiliados.mercadolivre.com.br" target="_blank" rel="noreferrer">Painel de Afiliados ML</a>) e clique em <strong>Salvar e Conectar API</strong>. Pronto!
+                No <a href="https://afiliados.mercadolivre.com.br" target="_blank" rel="noreferrer" style={{ color: '#ff5500', fontWeight: 700 }}>Painel de Afiliados do Mercado Livre</a>, veja qual é a sua <strong>"Etiqueta em uso"</strong> (ex: seu nome ou nome do grupo). Cole no campo acima e clique em <strong>Salvar e Conectar API</strong>!
               </p>
             </div>
           </div>
