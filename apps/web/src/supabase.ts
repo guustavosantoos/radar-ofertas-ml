@@ -59,7 +59,21 @@ export async function signUpWithEmail(email: string, password: string, fullName?
   });
 
   if (error) {
-    throw new Error(error.message === 'User already registered' ? 'Este e-mail já está cadastrado.' : error.message);
+    const isDuplicate = 
+      error.message?.toLowerCase().includes('already') ||
+      error.message?.toLowerCase().includes('registered') ||
+      error.message?.toLowerCase().includes('exists') ||
+      (error as any).code === 'user_already_exists';
+
+    if (isDuplicate) {
+      throw new Error('Este e-mail já está cadastrado. Faça login com suas credenciais ou utilize outro e-mail.');
+    }
+    throw new Error(error.message);
+  }
+
+  // Tratamento quando a proteção contra enumeração de e-mail do Supabase estiver ativa
+  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    throw new Error('Este e-mail já está cadastrado. Faça login com suas credenciais ou utilize outro e-mail.');
   }
 
   // Tenta sincronizar imediatamente na tabela public.profiles caso o trigger não tenha rodado
