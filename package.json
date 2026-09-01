@@ -1,0 +1,21 @@
+{
+  "name": "radar-ofertas-ml",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plataforma de inteligência, monitoramento e automação de ofertas do Mercado Livre",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev": "npm run dev:api"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}

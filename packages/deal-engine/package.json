@@ -1,0 +1,16 @@
+{
+  "name": "@radar-ofertas/deal-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@radar-ofertas/domain": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
