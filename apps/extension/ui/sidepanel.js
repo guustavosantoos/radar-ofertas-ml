@@ -323,35 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function showLoginPrompt() {
-    const wrapper = document.createElement('div');
-
-    const msg1 = document.createElement('div');
-    msg1.style.marginBottom = '12px';
-    msg1.textContent = 'Você precisa estar logado no Achadinho PRO.';
-    wrapper.appendChild(msg1);
-
-    const msg2 = document.createElement('div');
-    msg2.style.marginBottom = '12px';
-    msg2.textContent = 'Clique no botão abaixo:';
-    wrapper.appendChild(msg2);
-
-    const btn = document.createElement('button');
-    btn.id = 'open-site-login';
-    btn.style.cssText = 'width:100%;padding:10px;background:#FF6B00;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:500;margin-bottom:12px;';
-    btn.textContent = 'Abrir achadinhopro.com.br';
-    btn.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://achadinhopro.com.br' });
-    });
-    wrapper.appendChild(btn);
-
-    const note = document.createElement('div');
-    note.style.fontSize = '12px';
-    note.style.color = '#999';
-    note.textContent = 'Após fazer login, volte para a extensão.';
-    wrapper.appendChild(note);
-
-    loginError.style.color = '#FFF';
-    loginError.replaceChildren(wrapper);
+    loginError.textContent = '';
   }
 
   function updateEnvBadge(env) {
@@ -834,7 +806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     listingSource.textContent = source || '';
 
     sendAllToApiBtn.disabled = false;
-    sendAllToApiBtn.textContent = 'Enviar todos para Achadinho PRO';
+    sendAllToApiBtn.textContent = 'Salvar todos no Radar Ofertas ML';
     sendAllProgress.classList.add('hidden');
 
     // Note: "Selecionar Todos" button state is updated by updateSelectionCount() at the end
@@ -1469,7 +1441,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       var userCategoryShopee = catInputShopee ? catInputShopee.value.trim() : '';
       if (!userCategoryShopee) {
         sendToApiBtn.disabled = false;
-        sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+        sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
         alert('Informe o nome da categoria antes de salvar.');
         return;
       }
@@ -1481,11 +1453,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       sendToApiBtn.disabled = false;
-      sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+      sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
 
       if (saveResult && saveResult.success) {
         sendToApiBtn.textContent = '✓ Salvo!';
-        setTimeout(() => { sendToApiBtn.textContent = 'Enviar para Achadinho PRO'; }, 2500);
+        setTimeout(() => { sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML'; }, 2500);
       } else {
         alert(saveResult?.error || 'Erro ao salvar produto Shopee');
       }
@@ -1499,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       var userCategory = catInput ? catInput.value.trim() : '';
       if (!userCategory) {
         sendToApiBtn.disabled = false;
-        sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+        sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
         alert('Informe o nome da categoria antes de salvar.');
         return;
       }
@@ -1509,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!enriched.affiliateShortLink) {
         sendToApiBtn.disabled = false;
-        sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+        sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
         alert('Não foi possível gerar o link de afiliado. Verifique se está logado no Amazon Associates.');
         return;
       }
@@ -1520,11 +1492,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       sendToApiBtn.disabled = false;
-      sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+      sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
 
       if (result && result.success) {
         sendToApiBtn.textContent = '✓ Salvo com link!';
-        setTimeout(() => { sendToApiBtn.textContent = 'Enviar para Achadinho PRO'; }, 2500);
+        setTimeout(() => { sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML'; }, 2500);
       } else {
         alert(result?.error || 'Erro ao salvar produto Amazon');
       }
@@ -1536,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     var userCategoryML = catInputML ? catInputML.value.trim() : '';
     if (!userCategoryML) {
       sendToApiBtn.disabled = false;
-      sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+      sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
       alert('Informe o nome da categoria antes de salvar.');
       return;
     }
@@ -1546,7 +1518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!enriched.affiliateShortLink) {
       sendToApiBtn.disabled = false;
-      sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+      sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
       alert('Não foi possível gerar o link de afiliado. Verifique se está logado no ML Afiliados.');
       return;
     }
@@ -1554,11 +1526,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = await sendMessage({ action: 'saveProduct', productData: enriched });
 
     sendToApiBtn.disabled = false;
-    sendToApiBtn.textContent = 'Enviar para Achadinho PRO';
+    sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML';
 
     if (result && result.success) {
       sendToApiBtn.textContent = '✓ Salvo com link!';
-      setTimeout(() => { sendToApiBtn.textContent = 'Enviar para Achadinho PRO'; }, 2500);
+      setTimeout(() => { sendToApiBtn.textContent = 'Salvar no Radar Ofertas ML'; }, 2500);
     } else {
       alert(result?.error || 'Erro ao enviar produto');
     }
