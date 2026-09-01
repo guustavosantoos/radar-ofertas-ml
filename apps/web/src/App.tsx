@@ -900,82 +900,49 @@ function Dashboard({ selectedTemplate, setSelectedTemplate, userName }: { select
           <input
             type="text"
             className="search-input"
-            placeholder="Buscar produto por nome (ex: whey, notebook, fone)..."
+            placeholder="Buscar por nome (ex: whey, notebook, fone)..."
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={handleSearchKeyDown}
           />
         </div>
 
-        <div className="category-tabs">
-          {[
-            { key: 'all', label: '🔥 Todas' },
-            { key: 'best_sellers', label: '🏆 Mais Vendidos' },
-            { key: 'MLB1051', label: '📱 Celulares' },
-            { key: 'MLB1648', label: '💻 Informática' },
-            { key: 'MLB1000', label: '📺 Eletrônicos' },
-            { key: 'MLB1430', label: '👗 Moda' },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              className={`tab-btn ${activeTab === tab.key && !selectedCategoryId ? 'active' : ''}`}
-              onClick={() => {
-                setSelectedCategoryId(null);
-                setActiveTab(tab.key);
-              }}
+        <div className="filter-controls-group">
+          <div className="template-select-box">
+            <label className="template-label">
+              Template:
+            </label>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              className="template-select-input"
             >
-              {tab.label}
+              <option value="achadinhos">📲 Achadinhos Meli</option>
+              <option value="default">📝 Padrão Completo</option>
+              <option value="flash">⚡ Alerta Flash</option>
+              {customTemplates.map(t => (
+                <option key={t.id} value={t.id}>✨ {t.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="live-actions-group">
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              title={autoRefresh ? 'Pausar auto-atualização' : 'Ativar auto-atualização'}
+              className={`btn-live-toggle ${autoRefresh ? 'active' : ''}`}
+            >
+              <span>{autoRefresh ? '🟢 Live Feed' : '⏸️ Pausado'}</span>
+              {autoRefresh && <span className="countdown-pill">({formatSeconds(countdown)})</span>}
             </button>
-          ))}
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>
-            Template:
-          </label>
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            style={{
-              padding: '8px 12px', borderRadius: 8, border: '1px solid #cbd5e1',
-              fontWeight: 700, fontSize: '0.82rem', backgroundColor: 'white',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            <option value="achadinhos">📲 Achadinhos Meli</option>
-            <option value="default">📝 Padrão Completo</option>
-            <option value="flash">⚡ Alerta Flash</option>
-            {customTemplates.map(t => (
-              <option key={t.id} value={t.id}>✨ {t.name}</option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            title={autoRefresh ? 'Clique para pausar auto-atualização' : 'Clique para ativar auto-atualização'}
-            style={{
-              padding: '8px 12px', borderRadius: 8,
-              border: autoRefresh ? '1px solid #bbf7d0' : '1px solid #cbd5e1',
-              background: autoRefresh ? '#f0fdf4' : 'white',
-              color: autoRefresh ? '#15803d' : '#64748b',
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              gap: 6, fontWeight: 700, fontSize: '0.82rem', fontFamily: 'inherit',
-            }}
-          >
-            <span>{autoRefresh ? '🟢 Live Feed' : '⏸️ Pausado'}</span>
-            {autoRefresh && <span style={{ fontSize: '0.78rem', color: '#16a34a' }}>({formatSeconds(countdown)})</span>}
-          </button>
-
-          <button
-            onClick={() => fetchDeals({ tab: activeTab, template: selectedTemplate, categoryId: selectedCategoryId })}
-            style={{
-              padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
-              background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center',
-              gap: 6, fontWeight: 700, fontSize: '0.82rem', color: '#64748b', fontFamily: 'inherit',
-            }}
-          >
-            <RefreshCw size={14} /> Atualizar
-          </button>
+            <button
+              onClick={() => fetchDeals({ tab: activeTab, template: selectedTemplate, categoryId: selectedCategoryId })}
+              className="btn-refresh-deals"
+            >
+              <RefreshCw size={14} /> <span>Atualizar</span>
+            </button>
+          </div>
         </div>
       </div>
 
