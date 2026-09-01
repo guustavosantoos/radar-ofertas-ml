@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radar Ofertas ML</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Banner de atualização obrigatória -->
+    <div id="update-banner" class="hidden" style="
+      background: #dc2626;
+      color: white;
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.4;
+      border-bottom: 3px solid #991b1b;
+      animation: pulse-red 2s infinite;
+    ">
+      <div style="margin-bottom: 6px;">⚠️ ATUALIZAÇÃO DISPONÍVEL ⚠️</div>
+      <div id="update-banner-text" style="font-size: 12px; font-weight: 500; margin-bottom: 8px;">
+        Sua extensão está desatualizada. Baixe a nova versão para continuar usando.
+      </div>
+      <a id="update-banner-link" href="#" target="_blank" rel="noopener noreferrer" style="
+        display: inline-block;
+        background: white;
+        color: #dc2626;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 13px;
+        text-decoration: none;
+        cursor: pointer;
+      ">BAIXAR NOVA VERSÃO</a>
+    </div>
+    <style>
+      @keyframes pulse-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.85; }
+      }
+    </style>
+
+    <header class="header">
+      <div class="header-brand">
+        <img src="../icons/icon32.png" alt="Logo" class="brand-logo">
+        <h1 class="brand-title">Radar Ofertas ML</h1>
+      </div>
+      <div class="header-right">
+        <span id="env-badge" class="env-badge env-prod">LIVE</span>
+        <div class="header-status" id="connection-status">
+          <span class="status-dot connected"></span>
+          <span class="status-text">Ativo</span>
+        </div>
+      </div>
+    </header>
+
+    <section id="login-section" class="section login-section">
+      <div class="login-card">
+        <h2>Entrar no Radar Ofertas ML</h2>
+        <p class="login-subtitle">Use seu e-mail e senha cadastrados</p>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="seu@email.com" required data-testid="input-login-email">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Senha</label>
+            <input type="password" id="login-password" placeholder="Sua senha" required data-testid="input-login-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="login-btn" data-testid="button-login">
+            Entrar no Radar
+          </button>
+          <p id="login-error" class="error-text"></p>
+        </form>
+      </div>
+      <div class="login-footer" id="login-footer-admin">
+        <button class="btn-link" id="settings-toggle-login" data-testid="button-settings-toggle-login">Configurações de Conexão</button>
+        <div id="api-url-config-login" class="hidden">
+          <div class="form-group">
+            <input type="url" id="api-url-input-login" placeholder="https://radar-ofertas-ml-api.vercel.app" data-testid="input-api-url-login">
+            <button class="btn btn-small" id="save-api-url-login" data-testid="button-save-api-url-login">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main id="main-content" class="hidden">
+      <div class="user-bar">
+        <div class="user-info">
+          <span id="user-name" data-testid="text-user-name"></span>
+          <small id="user-version-label" data-testid="text-user-version"></small>
+        </div>
+        <span id="user-plan" class="badge" data-testid="text-user-plan"></span>
+        <button class="btn-icon" id="logout-btn" title="Sair" data-testid="button-logout">✕</button>
+      </div>
+
+      <div class="ml-login-check" id="ml-login-check">
+        <div class="alert alert-warning" id="ml-not-logged" data-testid="alert-ml-not-logged">
+          <strong>Mercado Livre:</strong> Faça login na sua conta de afiliado do ML em outra aba para gerar links.
+        </div>
+      </div>
+
+      <!-- Tag Amazon em uso. Com o link longo (`dp/ASIN?tag=`) a tag é o que define para
+           QUAL loja vai a comissão, e ela precisa ser conferível ANTES de salvar: no
+           formato antigo (amzn.to) ela ficava invisível dentro do redirect, e foi assim
+           que a tag "status" passou semanas cunhando link para conta errada. -->
+      <div class="amz-tag-bar hidden" id="amz-tag-bar">
+        <span class="amz-tag-label">Tag Amazon:</span>
+        <code id="amz-tag-value" data-testid="text-amazon-tag">—</code>
+        <button class="amz-tag-refresh" id="amz-tag-refresh" title="Reler a tag no Associados Amazon" data-testid="button-refresh-amazon-tag">Atualizar</button>
+      </div>
+
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button class="tab-button active" data-tab="produto" data-testid="button-tab-produto">
+            <span class="tab-icon">📦</span>
+            <span class="tab-label">Produto</span>
+          </button>
+          <button class="tab-button" data-tab="lista" data-testid="button-tab-lista">
+            <span class="tab-icon">📋</span>
+            <span class="tab-label">Lista</span>
+          </button>
+          <button class="tab-button" data-tab="cupons" data-testid="button-tab-cupons">
+            <span class="tab-icon">🎟️</span>
+            <span class="tab-label">Cupons</span>
+          </button>
+          <!-- Aba "Automação" oculta temporariamente. Para reativar, remover style="display: none". -->
+          <button class="tab-button" data-tab="automacao" data-testid="button-tab-automacao" style="display: none;">
+            <span class="tab-icon">⚙️</span>
+            <span class="tab-label">Automação</span>
+          </button>
+          <!-- Aba "Config" visível somente para usuários com plan=admin (controle em sidepanel.js -> showMainContent). -->
+          <button class="tab-button hidden" data-tab="configuracoes" data-testid="button-tab-configuracoes">
+            <span class="tab-icon">⚡</span>
+            <span class="tab-label">Config</span>
+          </button>
+        </div>
+
+        <div class="tabs-content">
+          <!-- TAB: PRODUTO ATUAL -->
+          <div id="tab-produto" class="tab-pane active" data-testid="tab-pane-produto">
+            <div id="no-product" class="empty-state" data-testid="text-no-product">
+              <p>Navegue até um produto ou busque por palavras-chave para salvar no Achadinho PRO</p>
+            </div>
+
+            <div id="product-card" class="product-card hidden" data-testid="card-product">
+              <img id="product-image" class="product-image" alt="Produto" data-testid="img-product">
+              <div class="product-info">
+                <h4 id="product-name" data-testid="text-product-name"></h4>
+                <div class="product-meta">
+                  <span id="product-price" class="price" data-testid="text-product-price"></span>
+                  <span id="product-original-price" class="price-original" data-testid="text-product-original-price"></span>
+                  <span id="product-discount" class="badge badge-green" data-testid="text-product-discount"></span>
+                </div>
+                <div class="product-details">
+                  <span id="product-seller" data-testid="text-product-seller"></span>
+                  <span id="product-shipping" data-testid="text-product-shipping"></span>
+                  <span id="product-rating" data-testid="text-product-rating"></span>
+                  <span id="product-sales" data-testid="text-product-sales"></span>
+                  <span id="product-bestseller" data-testid="text-product-bestseller"></span>
+                </div>
+              </div>
+              <div class="product-actions">
+                <div class="category-input-group" id="single-product-category-group" style="margin-bottom: 8px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #ccc;">Categoria:</label>
+                  <select id="singleProductCategorySelect" class="category-input" style="width: 100%; margin-bottom: 0; cursor: pointer;">
+                    <option value="">-- Selecione ou crie nova --</option>
+                    <option value="__new__">+ Nova categoria...</option>
+                  </select>
+                  <input type="text" id="singleProductCategoryInput" placeholder="Digite o nome da nova categoria..." class="category-input hidden" style="margin-top: 4px;">
+                </div>
+                <div class="template-select-group" style="margin-bottom: 8px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #ccc;">Formato de Mensagem:</label>
+                  <select id="templateSelect" class="category-input" style="width: 100%; margin-bottom: 0; cursor: pointer;">
+                    <option value="achadinhos">📲 Achadinhos Meli</option>
+                    <option value="default">📝 Padrão Completo</option>
+                    <option value="flash">⚡ Alerta Flash</option>
+                  </select>
+                </div>
+
+                <button class="btn btn-primary" id="generate-link-btn" data-testid="button-generate-link">
+                  Gerar Link de Afiliado
+                </button>
+                <div id="affiliate-link-result" class="hidden">
+                  <div class="link-display">
+                    <input type="text" id="affiliate-link-input" readonly data-testid="input-affiliate-link">
+                    <button class="btn btn-small" id="copy-link-btn" data-testid="button-copy-link">Copiar</button>
+                  </div>
+                </div>
+
+                <button class="btn btn-secondary" id="copy-whatsapp-btn" data-testid="button-copy-whatsapp" style="background: #25d366; color: #0b0f19; font-weight: 800; border: none;">
+                  📋 Copiar Mensagem WhatsApp
+                </button>
+                <button class="btn btn-secondary" id="direct-whatsapp-btn" style="background: #128c7e; color: white; font-weight: 700; border: none;">
+                  📲 Abrir no WhatsApp
+                </button>
+                <button class="btn btn-secondary" id="send-to-api-btn" data-testid="button-send-to-api">
+                  💾 Salvar no Radar Ofertas ML
+                </button>
+              </div>
+            </div>
+
+            <div id="listing-card" class="listing-card hidden" data-testid="card-listing">
+              <div class="listing-header">
+                <span class="listing-count" id="listing-count" data-testid="text-listing-count">0 produtos</span>
+                <span class="listing-source" id="listing-source" data-testid="text-listing-source"></span>
+              </div>
+              <div class="listing-actions">
+                <button class="btn btn-select-all" id="select-all-btn">
+                  Selecionar Todos
+                </button>
+                <button class="btn btn-primary" id="send-selected-to-api-btn">
+                  Enviar Selecionados
+                </button>
+                <button class="btn btn-primary btn-full hidden" id="send-all-to-api-btn" data-testid="button-send-all-to-api" style="display: none;">
+                  Enviar TODOS
+                </button>
+              </div>
+              <div id="send-all-progress" class="hidden" style="margin-top: 8px;">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="send-all-progress-fill" style="width: 0%"></div>
+                </div>
+                <span id="send-all-progress-text" style="font-size: 12px; color: #999;"></span>
+              </div>
+              <div class="category-input-group">
+                <label for="categoryNameInput" style="font-size: 12px; font-weight: 600; color: #ccc;">Categoria:</label>
+                <div id="categoryBreadcrumbDisplay" class="category-breadcrumb hidden"></div>
+                <div style="position: relative;">
+                  <select id="categorySelect" class="category-input" style="width: 100%; margin-bottom: 0; cursor: pointer;">
+                    <option value="">-- Selecione ou crie nova --</option>
+                    <option value="__new__">+ Nova categoria...</option>
+                  </select>
+                  <input type="text" id="categoryNameInput" placeholder="Digite o nome da nova categoria..." class="category-input hidden" style="margin-top: 4px;">
+                </div>
+                <small class="category-hint" id="categoryHint" style="font-size: 11px; color: #888;"></small>
+              </div>
+              <div class="listing-items" id="listing-items" data-testid="list-listing-items"></div>
+            </div>
+
+            <div id="collect-action" class="hidden" style="margin-top: 8px; display: none;">
+              <button class="btn btn-primary btn-full hidden" id="collect-page-btn" style="display: none;">
+                📦 Coletar Produtos desta Página
+              </button>
+              <div id="collect-progress" class="hidden" style="margin-top: 8px;">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="collect-progress-fill" style="width: 0%"></div>
+                </div>
+                <span id="collect-progress-text" style="font-size: 12px; color: #999;"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: LISTA (Gerenciar + Salvar) -->
+          <div id="tab-lista" class="tab-pane" data-testid="tab-pane-lista">
+            <!-- Bloco: Minhas Listas -->
+            <div class="lista-section">
+              <div class="lista-section-header" id="toggle-minhas-listas">
+                <h3 class="lista-section-title">Minhas Listas</h3>
+                <span class="lista-section-toggle collapsed" id="minhas-listas-arrow">▼</span>
+              </div>
+              <div id="minhas-listas-body" class="lista-section-body collapsed">
+                <div class="kw-to-list-row" style="padding: 8px 12px; border-bottom: 1px solid var(--border);">
+                  <button class="btn btn-secondary btn-full btn-small" id="create-list-from-kw-btn">
+                    + Criar lista a partir de palavra-chave
+                  </button>
+                  <div id="kw-list-dropdown" class="hidden" style="margin-top: 6px;">
+                    <select id="kw-list-select" class="list-select" style="width: 100%;">
+                      <option value="">Selecione um grupo...</option>
+                    </select>
+                    <div style="display: flex; gap: 6px; margin-top: 6px;">
+                      <button class="btn btn-small btn-primary" id="kw-list-confirm-btn" style="flex: 1;">Criar Lista</button>
+                      <button class="btn btn-small btn-secondary" id="kw-list-cancel-btn">Cancelar</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="listas-loading" class="empty-state" style="padding: 16px;">
+                  <p>⏳ Carregando listas...</p>
+                </div>
+                <div id="listas-empty" class="empty-state hidden" style="padding: 16px;">
+                  <p>📭 Nenhuma lista salva</p>
+                  <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Salve produtos da página abaixo</p>
+                </div>
+                <div id="listas-container" class="hidden">
+                  <div id="listas-list" class="listas-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco: Salvar Produtos na Lista -->
+            <div class="lista-section">
+              <div class="lista-section-header" id="toggle-salvar-lista">
+                <h3 class="lista-section-title">Salvar Produtos</h3>
+                <span class="lista-section-toggle" id="salvar-lista-arrow">▼</span>
+              </div>
+              <div id="salvar-lista-body" class="lista-section-body">
+                <div id="save-list-no-products" class="empty-state" style="padding: 16px;">
+                  <p>📍 Navegue até uma busca ou categoria do Mercado Livre para carregar produtos</p>
+                </div>
+                <div id="save-list-content" class="hidden">
+                  <div class="list-selector-block">
+                    <label class="list-selector-label">Salvar na lista:</label>
+                    <div class="list-selector-row">
+                      <select id="save-list-select" class="list-select">
+                        <option value="">Selecione uma lista...</option>
+                      </select>
+                      <button class="btn btn-small btn-primary" id="save-list-new-btn" title="Nova lista">+</button>
+                    </div>
+                    <div id="save-list-new-input-row" class="hidden" style="margin-top: 6px;">
+                      <div class="list-selector-row">
+                        <input type="text" id="save-list-new-name" placeholder="Nome da nova lista..." class="list-name-input">
+                        <button class="btn btn-small btn-success" id="save-list-create-btn">Criar</button>
+                        <button class="btn btn-small btn-secondary" id="save-list-cancel-btn">X</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="save-list-header">
+                    <span class="listing-count" id="save-list-count">0 produtos</span>
+                  </div>
+                  <div class="category-input-group" id="save-list-category-group" style="display: none;">
+                    <label style="font-size: 12px; font-weight: 600; color: #ccc;">Categoria dos produtos:</label>
+                    <div id="saveListCategoryBreadcrumb" class="category-breadcrumb hidden"></div>
+                    <select id="saveListCategorySelect" class="category-input" style="width: 100%; margin-bottom: 0; cursor: pointer;">
+                      <option value="">-- Selecione ou crie nova --</option>
+                      <option value="__new__">+ Nova categoria...</option>
+                    </select>
+                    <input type="text" id="saveListCategoryInput" placeholder="Digite o nome da nova categoria..." class="category-input hidden" style="margin-top: 4px;">
+                    <small id="saveListCategoryHint" style="font-size: 11px; color: #888;"></small>
+                  </div>
+                  <div class="listing-actions">
+                    <button class="btn btn-select-all" id="save-list-select-all-btn">Selecionar Todos</button>
+                    <button class="btn btn-primary btn-full" id="save-list-save-btn" disabled>
+                      Salvar Selecionados na Lista
+                    </button>
+                  </div>
+                  <div class="listing-items" id="save-list-items"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: LISTA CUPONS (Mercado Livre) -->
+          <!-- Aba dedicada, com código próprio: nada aqui compartilha estado nem
+               classes CSS com a aba "Lista". Em especial os checkboxes usam
+               .coupon-list-checkbox, porque o salvamento da aba Lista varre o
+               documento inteiro por .save-list-checkbox. -->
+          <div id="tab-cupons" class="tab-pane" data-testid="tab-pane-cupons">
+            <!-- Estado 1: cupons sincronizados -->
+            <div class="lista-section" id="cupons-section-lista">
+              <div class="lista-section-header">
+                <h3 class="lista-section-title">Meus cupons do Mercado Livre</h3>
+              </div>
+              <div class="lista-section-body">
+                <!-- A sincronização mora SÓ no web app. Ter o mesmo botão em dois lugares
+                     era duas portas para o mesmo fluxo, cada uma com um estado diferente
+                     na tela — e a do painel ainda deixava o usuário achando que precisava
+                     sincronizar de novo depois de já ter sincronizado lá. -->
+                <p class="hint-text">
+                  Os cupons são sincronizados na página <strong>Cupons</strong> do
+                  Achadinho PRO. De lá, o botão <strong>“ver produtos”</strong> do card
+                  abre a listagem do cupom já com este painel pronto para montar a lista.
+                </p>
+                <button class="btn btn-primary btn-block" id="cupons-open-webapp-btn" data-testid="button-open-webapp-coupons">
+                  Abrir a página de cupons
+                </button>
+                <div class="loading hidden" id="cupons-loading"><p>Lendo seus cupons…</p></div>
+                <div class="empty-state hidden" id="cupons-empty">
+                  <p>Nenhum cupom gerado encontrado.</p>
+                </div>
+                <div class="lista-cards hidden" id="cupons-list"></div>
+              </div>
+            </div>
+
+            <!-- Estado 2: produtos do cupom aberto -->
+            <div class="lista-section hidden" id="cupons-section-produtos">
+              <div class="lista-section-header">
+                <h3 class="lista-section-title">Produtos do cupom</h3>
+              </div>
+              <div class="lista-section-body">
+                <div class="coupon-active-banner" id="cupons-active-banner"></div>
+                <!-- Só aparece quando a aba está fora da listagem do cupom. Antes o
+                     painel ficava mudo nesse estado e parecia quebrado. -->
+                <div class="lista-card-meta hidden" id="cupons-suspenso-aviso" data-testid="coupon-suspended-warning"></div>
+                <label class="form-label" for="cupons-list-name">Nome da lista</label>
+                <input type="text" id="cupons-list-name" class="form-input" data-testid="input-coupon-list-name" />
+                <div class="listing-header">
+                  <span id="cupons-products-count" data-testid="coupon-products-count">0 produtos</span>
+                  <span class="listing-header-actions">
+                    <button class="btn-link" id="cupons-select-all" data-testid="button-coupon-select-all">
+                      Selecionar todos
+                    </button>
+                    <button class="btn-link" id="cupons-clear-all" data-testid="button-coupon-clear-all">
+                      Desmarcar todos
+                    </button>
+                  </span>
+                </div>
+                <!-- Aparece ao bater o teto de seleção. Antes o usuário só descobria o
+                     limite ao clicar em salvar, depois de escolher à toa. -->
+                <div class="lista-card-meta hidden" id="cupons-limite-aviso" data-testid="coupon-limit-warning"></div>
+                <div class="listing-items" id="cupons-products-items"></div>
+                <button class="btn btn-primary btn-block" id="cupons-save-btn" data-testid="button-save-coupon-list">
+                  Salvar selecionados na Lista Cupons
+                </button>
+                <button class="btn btn-secondary btn-block" id="cupons-reconcile-btn" data-testid="button-reconcile-coupon-list">
+                  Sincronizar lista completa
+                </button>
+                <p class="hint-text">
+                  “Salvar selecionados” só adiciona. “Sincronizar lista completa” percorre
+                  todas as páginas e <strong>remove</strong> da lista o que não estiver mais
+                  entre os produtos do cupom.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: AUTOMAÇÃO -->
+          <div id="tab-automacao" class="tab-pane" data-testid="tab-pane-automacao">
+            <!-- Agendamento Diário -->
+            <div class="lista-section">
+              <div class="lista-section-header" id="toggle-agendamento">
+                <h3 class="lista-section-title">Agendamento Diário</h3>
+                <span class="lista-section-toggle" id="agendamento-arrow">▼</span>
+              </div>
+              <div id="agendamento-body" class="lista-section-body">
+                <div style="padding: 10px 12px;">
+                  <label class="toggle-label" style="margin-bottom: 10px;">
+                    <input type="checkbox" id="schedule-enabled">
+                    <span style="font-size: 12px; font-weight: 600;">Ativar agendamento automático</span>
+                  </label>
+
+                  <div id="schedule-config" class="hidden">
+                    <div style="margin-bottom: 10px;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">Período de execução:</label>
+                      <div class="schedule-periods">
+                        <label class="schedule-period-label">
+                          <input type="checkbox" value="madrugada" class="schedule-period-cb"> Madrugada <span style="color: var(--text-muted); font-size: 10px;">(00-06h)</span>
+                        </label>
+                        <label class="schedule-period-label">
+                          <input type="checkbox" value="manha" class="schedule-period-cb"> Manhã <span style="color: var(--text-muted); font-size: 10px;">(06-12h)</span>
+                        </label>
+                        <label class="schedule-period-label">
+                          <input type="checkbox" value="tarde" class="schedule-period-cb"> Tarde <span style="color: var(--text-muted); font-size: 10px;">(12-18h)</span>
+                        </label>
+                        <label class="schedule-period-label">
+                          <input type="checkbox" value="noite" class="schedule-period-cb"> Noite <span style="color: var(--text-muted); font-size: 10px;">(18-00h)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">Grupos de palavras-chave:</label>
+                      <div id="schedule-keyword-groups" style="max-height: 120px; overflow-y: auto;"></div>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                      <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">Fontes de Produtos:</label>
+                      <div class="source-accordion">
+
+                        <!-- Shopee -->
+                        <div class="source-item" data-source="shopee">
+                          <div class="source-header">
+                            <label class="source-toggle-label">
+                              <input type="checkbox" value="shopee" class="schedule-platform-cb">
+                              <span class="source-toggle-switch"></span>
+                              <span>Shopee</span>
+                            </label>
+                          </div>
+                          <div class="source-panel hidden">
+                            <div class="source-subsource">
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="shopee" data-sub="categories"> Categorias</label>
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="shopee" data-sub="keywords"> Palavras-Chave</label>
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="shopee" data-sub="offer_types"> Tipos de Oferta</label>
+                              <div class="source-offer-types hidden" data-source="shopee">
+                                <label class="source-option sub-indent"><input type="checkbox" class="source-offer-cb" data-source="shopee" value="flash_sale"> Ofertas Relâmpago</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Mercado Livre -->
+                        <div class="source-item" data-source="ml">
+                          <div class="source-header">
+                            <label class="source-toggle-label">
+                              <input type="checkbox" value="ml" class="schedule-platform-cb">
+                              <span class="source-toggle-switch"></span>
+                              <span>Mercado Livre</span>
+                            </label>
+                          </div>
+                          <div class="source-panel hidden">
+                            <div class="source-subsource">
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="ml" data-sub="offer_types"> Tipos de Oferta</label>
+                              <div class="source-offer-types hidden" data-source="ml">
+                                <label class="source-option sub-indent"><input type="checkbox" class="source-offer-cb" data-source="ml" value="oferta_do_dia"> Oferta do Dia</label>
+                                <label class="source-option sub-indent"><input type="checkbox" class="source-offer-cb" data-source="ml" value="oferta_relampago"> Oferta Relâmpago</label>
+                              </div>
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="ml" data-sub="categories"> Categorias</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Amazon -->
+                        <div class="source-item" data-source="amazon">
+                          <div class="source-header">
+                            <label class="source-toggle-label">
+                              <input type="checkbox" value="amazon" class="schedule-platform-cb">
+                              <span class="source-toggle-switch"></span>
+                              <span>Amazon</span>
+                            </label>
+                          </div>
+                          <div class="source-panel hidden">
+                            <div class="source-subsource">
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="amazon" data-sub="offer_types"> Tipos de Oferta</label>
+                              <div class="source-offer-types hidden" data-source="amazon">
+                                <label class="source-option sub-indent"><input type="checkbox" class="source-offer-cb" data-source="amazon" value="deal"> Oferta do Dia</label>
+                                <label class="source-option sub-indent"><input type="checkbox" class="source-offer-cb" data-source="amazon" value="bestseller"> Mais Vendidos</label>
+                                <label class="source-option sub-indent"><input type="checkbox" class="source-offer-cb" data-source="amazon" value="movers_and_shakers"> Produtos em Alta</label>
+                              </div>
+                              <label class="source-option"><input type="checkbox" class="source-sub-cb" data-source="amazon" data-sub="categories"> Categorias</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Listas -->
+                        <div class="source-item" data-source="lists">
+                          <div class="source-header">
+                            <label class="source-toggle-label">
+                              <input type="checkbox" value="lists" class="schedule-platform-cb">
+                              <span class="source-toggle-switch"></span>
+                              <span>Listas</span>
+                            </label>
+                          </div>
+                          <div class="source-panel hidden">
+                            <div id="schedule-lists-container" class="source-subsource" style="max-height: 100px; overflow-y: auto;">
+                              <div style="font-size: 11px; color: var(--text-muted); padding: 4px;">Carregando listas...</div>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-full btn-small" id="schedule-save-btn">Salvar Agendamento</button>
+                  </div>
+
+                  <div id="schedule-status" class="hidden" style="margin-top: 8px; padding: 8px; background: var(--bg-input); border-radius: var(--radius); font-size: 11px;">
+                    <div id="schedule-last-exec" style="color: var(--text-secondary);"></div>
+                    <div id="schedule-next-exec" style="color: var(--accent); margin-top: 4px; font-weight: 600;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TAB: CONFIGURAÇÕES -->
+          <div id="tab-configuracoes" class="tab-pane" data-testid="tab-pane-configuracoes">
+            <div class="settings-content">
+              <div class="form-group env-selector-group hidden" id="env-selector-group">
+                <label>Ambiente</label>
+                <div class="env-selector">
+                  <button class="env-btn active" data-env="prod" id="env-btn-prod">Produção</button>
+                  <button class="env-btn" data-env="dev" id="env-btn-dev">Desenvolvimento</button>
+                </div>
+                <small class="env-hint" id="env-hint"></small>
+              </div>
+              <div class="form-group hidden" id="api-url-group">
+                <label>URL da API</label>
+                <input type="url" id="api-url-input" placeholder="https://radar-ofertas-ml-api.vercel.app" data-testid="input-api-url">
+                <button class="btn btn-small" id="save-api-url" data-testid="button-save-api-url">Salvar</button>
+              </div>
+              <div class="form-group">
+                <label class="toggle-label">
+                  <input type="checkbox" id="filter-free-shipping" data-testid="input-filter-free-shipping">
+                  Apenas frete grátis
+                </label>
+              </div>
+              <div class="form-group">
+                <label>Avaliação mínima (0-500)</label>
+                <input type="number" id="filter-min-rating" min="0" max="500" placeholder="400" data-testid="input-filter-min-rating">
+              </div>
+              <div class="form-group">
+                <label>Desconto mínimo (%)</label>
+                <input type="number" id="filter-min-discount" min="0" max="100" placeholder="10" data-testid="input-filter-min-discount">
+              </div>
+              <div class="form-group">
+                <label>Preço máximo (R$)</label>
+                <input type="number" id="filter-max-price" min="0" placeholder="50000" data-testid="input-filter-max-price">
+              </div>
+              <button class="btn btn-primary btn-full" id="save-filters-btn" data-testid="button-save-filters">
+                Salvar Filtros
+              </button>
+              <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #333; text-align: center;">
+                <small id="extension-version-label" style="font-size: 10px; color: #888;">v1.0.0 • Radar Ofertas ML</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Queue Paused Banner -->
+  <div id="queue-paused-banner" class="queue-paused-banner hidden">
+    <span id="queue-paused-text">⏸ Envio pausado — clique "Enviar" para continuar ou aguarde 1 min</span>
+  </div>
+
+  <!-- Queue Status Bar (fixed at bottom) -->
+  <div id="queue-status-bar" class="queue-status-bar hidden">
+    <div class="queue-status-header">
+      <span class="queue-status-text">Fila de envio</span>
+      <button id="queue-clear-btn" class="queue-clear-btn" title="Limpar fila">✕</button>
+    </div>
+    <div class="queue-progress-bar">
+      <div class="queue-progress-fill"></div>
+    </div>
+    <!-- Motivo do último item que falhou. Sem isto a barra dizia só "10 erros" e
+         a causa (sessão do Associados caída, throttling da Amazon) ficava no
+         console do service worker, onde o usuário não tem por que olhar. -->
+    <div class="queue-status-error hidden" id="queue-status-error"></div>
+  </div>
+
+  <!-- Regra do vínculo aba ↔ cupom (Lista Cupons). Mesmo arquivo que o service
+       worker importa: a chave do container tem de ser calculada igual nos dois. -->
+  <script src="../services/ml-coupon-tab-link.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

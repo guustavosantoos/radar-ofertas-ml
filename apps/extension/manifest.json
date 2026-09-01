@@ -1,0 +1,77 @@
+{
+  "manifest_version": 3,
+  "name": "Radar Ofertas ML — Extensão de Afiliados",
+  "version": "1.0.0",
+  "description": "Extensão oficial do Radar Ofertas ML. Extraia produtos do Mercado Livre em 1 clique, gere links de afiliado com sua tag e copie mensagens prontas para o WhatsApp.",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "storage",
+    "notifications",
+    "cookies",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://*.mercadolivre.com.br/*",
+    "https://*.mercadolibre.com/*",
+    "https://*.amazon.com.br/*",
+    "https://*.shopee.com.br/*",
+    "https://radar-ofertas-ml-api.vercel.app/*",
+    "https://rokkprgddthtyxxxaajt.supabase.co/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "ui/sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.mercadolivre.com.br/*",
+        "https://*.mercadolibre.com/*"
+      ],
+      "js": [
+        "content/scrapers/ml-price-utils.js",
+        "content/scrapers/ml-hub-scraper.js",
+        "content/scrapers/ml-pdp-scraper.js",
+        "content/scrapers/ml-scraper.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.shopee.com.br/*"],
+      "js": ["content/scrapers/shopee-scraper.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.amazon.com.br/*"],
+      "js": [
+        "content/scrapers/amazon-price-utils.js",
+        "content/scrapers/amazon-image-utils.js",
+        "content/scrapers/amazon-reviews-utils.js",
+        "content/scrapers/amazon-scraper.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://radar-ofertas-ml-api.vercel.app/*",
+        "http://localhost:5173/*"
+      ],
+      "js": ["content/version-injector.js", "content/coupons-bridge.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Radar Ofertas ML"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
