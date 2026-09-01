@@ -23,24 +23,31 @@ export class MercadoLivreClient {
   }
 
   /**
-   * Garante um access_token válido, renovando automaticamente via refresh_token se necessário.
+   * Garante um access_token válido se credenciais OAuth estiverem configuradas.
    */
-  async getValidAccessToken(): Promise<string> {
+  async getValidAccessToken(): Promise<string | null> {
+    if (!this.clientId || !this.clientSecret || !this.refreshToken) {
+      return null;
+    }
+
     const now = Date.now();
-    // Se o token existe e ainda não expirou (com margem de 60s), usa ele
     if (this.accessToken && this.tokenExpiresAt > now + 60000) {
       return this.accessToken;
     }
 
-    console.log('[MercadoLivreClient] Renovando access_token via refresh_token...');
-    const tokenData = await this.refreshAccessToken();
-    this.accessToken = tokenData.access_token;
-    this.tokenExpiresAt = Date.now() + tokenData.expires_in * 1000;
-    if (tokenData.refresh_token) {
-      this.refreshToken = tokenData.refresh_token;
+    try {
+      console.log('[MercadoLivreClient] Renovando access_token via refresh_token...');
+      const tokenData = await this.refreshAccessToken();
+      this.accessToken = tokenData.access_token;
+      this.tokenExpiresAt = Date.now() + tokenData.expires_in * 1000;
+      if (tokenData.refresh_token) {
+        this.refreshToken = tokenData.refresh_token;
+      }
+      return this.accessToken;
+    } catch (e) {
+      console.warn('[MercadoLivreClient] Falha ao renovar token OAuth, continuando em modo público:', e);
+      return null;
     }
-    console.log('[MercadoLivreClient] Token renovado com sucesso! Válido por:', tokenData.expires_in, 'segundos');
-    return this.accessToken;
   }
 
   /**
@@ -81,7 +88,7 @@ export class MercadoLivreClient {
   }
 
   /**
-   * Realiza chamadas GET autenticadas na API do Mercado Livre
+   * Realiza chamadas GET na API pública ou autenticada do Mercado Livre
    */
   async get<T>(endpoint: string): Promise<T> {
     const token = await this.getValidAccessToken();
@@ -89,13 +96,16 @@ export class MercadoLivreClient {
     return new Promise((resolve, reject) => {
       const url = endpoint.startsWith('http') ? endpoint : `https://api.mercadolibre.com${endpoint}`;
 
-      https.get(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'User-Agent': 'RadarOfertasML/1.0',
-          'Accept': 'application/json',
-        },
-      }, (res) => {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      https.get(url, { headers }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
